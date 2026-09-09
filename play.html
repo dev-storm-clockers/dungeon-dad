@@ -69,6 +69,11 @@
             </div>
 
             <div class="combat-label">Hand — tap a card you can afford (gold border = legal)</div>
+            <div class="combat-hand-toolbar" id="combat-hand-toolbar">
+              <button type="button" class="btn ghost combat-hand-scroll" id="btn-hand-scroll-left" aria-label="Scroll hand left">◀</button>
+              <span class="hint">Scroll hand</span>
+              <button type="button" class="btn ghost combat-hand-scroll" id="btn-hand-scroll-right" aria-label="Scroll hand right">▶</button>
+            </div>
             <div class="combat-hand" id="combat-hand"></div>
 
             <div class="row combat-actions">
@@ -197,6 +202,7 @@
 
         // Hide interactive combat chrome while showing result
         DDUI.show(DDUI.$('#combat-hand'), false);
+        DDUI.show(DDUI.$('#combat-hand-toolbar'), false);
         DDUI.show(DDUI.$('#combat-board'), false);
         DDUI.show(DDUI.$('.combat-actions'), false);
         DDUI.show(DDUI.$('#combat-hand-label'), false);
@@ -229,6 +235,7 @@
         DDUI.show(DDUI.$('#play-controls'), false);
 
         DDUI.show(DDUI.$('#combat-hand'), true);
+        DDUI.show(DDUI.$('#combat-hand-toolbar'), true);
         DDUI.show(DDUI.$('#combat-board'), true);
         DDUI.show(DDUI.$('.combat-actions'), true);
         DDUI.show(DDUI.$('#combat-hand-label'), true);
@@ -388,6 +395,10 @@
           }
           handEl.appendChild(card);
         });
+        var handLabel = DDUI.$('#combat-hand-label');
+        if (handLabel) {
+          handLabel.textContent = 'Party hand (shared) — ' + (combat.hand || []).length + ' cards';
+        }
         if (combat.dealAnim) {
           combat.dealAnim = false;
           DDSession.write(session);
@@ -703,6 +714,41 @@
         render();
       });
 
+      (function wireHandScroll() {
+        var handEl = DDUI.$('#combat-hand');
+        var left = DDUI.$('#btn-hand-scroll-left');
+        var right = DDUI.$('#btn-hand-scroll-right');
+        if (!handEl || !left || !right) return;
+        function scrollHand(dir) {
+          // Recompute containment: if hand grew with content, clamp width first
+          handEl.style.maxWidth = Math.min(handEl.parentElement.clientWidth || window.innerWidth, window.innerWidth - 24) + 'px';
+          var before = handEl.scrollLeft;
+          var maxScroll = Math.max(0, handEl.scrollWidth - handEl.clientWidth);
+          var step = Math.max(180, Math.floor(handEl.clientWidth * 0.75));
+          var target = Math.max(0, Math.min(maxScroll, before + dir * step));
+          handEl.scrollLeft = target;
+          if (maxScroll < 4) {
+            DDUI.toast('Hand fits on screen (' + handEl.children.length + ' cards)');
+          } else if (Math.abs(handEl.scrollLeft - before) < 1) {
+            DDUI.toast(dir > 0 ? 'End of hand' : 'Start of hand');
+          }
+        }
+        left.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          scrollHand(-1);
+        });
+        right.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          scrollHand(1);
+        });
+        handEl.addEventListener('wheel', function (e) {
+          if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+            handEl.scrollLeft += e.deltaY;
+            e.preventDefault();
+          }
+        }, { passive: false });
+      })();
+
       DDUI.$('#btn-end-turn').addEventListener('click', function () {
         if (!isHost) return;
         session = DDSession.read(active.code) || session;
@@ -718,7 +764,13 @@
         motion.fainted = res.fainted || [];
         motion.pulseWhose = true;
         motion.pulseEnergy = true;
-        if (res.effect) DDEffects.play(res.effect, DDEffects.kindLabel(res.effect));
+        // Verifier-visible resolve: always ≥300ms hit burst + chip shake path
+        DDEffects.play('hit', DDEffects.kindLabel('hit'));
+        if (res.effect && res.effect !== 'hit') {
+          window.setTimeout(function () {
+            DDEffects.play(res.effect, DDEffects.kindLabel(res.effect));
+          }, 420);
+        }
         if (res.outcome) {
           // Still show hit motion briefly before result chrome
           render();

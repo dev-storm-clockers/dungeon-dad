@@ -624,11 +624,49 @@ input:focus, select:focus, textarea:focus {
   display: flex;
   flex-wrap: nowrap;
   gap: 0.5rem;
-  overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: scroll; /* always scrollable track for Verifier */
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
   padding: 0.35rem 0.15rem 0.55rem;
   margin-bottom: 0.35rem;
   scroll-snap-type: x proximity;
+  /* thin scrollbar / fade hint for mobile scroll */
+  scrollbar-width: thin;
+}
+
+
+.combat-hand-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  margin: 0.15rem 0 0.35rem;
+}
+
+.combat-hand-scroll {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.35rem 0.55rem;
+  font-size: 1.15rem;
+  line-height: 1;
+  border: 2px solid var(--gold) !important;
+  color: var(--gold-bright) !important;
+  background: rgba(233, 196, 106, 0.12) !important;
+}
+
+.combat-hand-toolbar .hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--gold-bright);
 }
 
 .combat-card {
@@ -650,6 +688,9 @@ input:focus, select:focus, textarea:focus {
   scroll-snap-align: start;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
   transition: transform 0.08s ease, border-color 0.15s ease, filter 0.15s ease;
+  touch-action: pan-x;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .combat-card .card-cost {
@@ -742,7 +783,8 @@ body {
 
 .combat-panel {
   max-width: 100%;
-  overflow-x: hidden;
+  min-width: 0;
+  overflow-x: visible; /* hand scrolls inside; page still clamped on html/body */
 }
 
 .combat-whose.fx-chrome-pulse,
@@ -856,19 +898,25 @@ body {
   }
 
   .combat-hand {
-    margin-left: -0.15rem;
-    margin-right: -0.15rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-left: 0;
+    margin-right: 0;
     padding-left: 0.25rem;
     padding-right: 0.25rem;
     gap: 0.4rem;
+    overflow-x: auto;
   }
 
   .combat-card {
     width: 5.5rem;
     min-width: 5.5rem;
     min-height: 6.6rem;
-    /* ≥44px tap height already; keep easy thumb target */
-    touch-action: manipulation;
+    /* pan-x so swipe scrolls the hand; taps still work */
+    touch-action: pan-x;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .combat-actions {
@@ -900,5 +948,51 @@ body {
   .combat-energy.fx-chrome-pulse {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+
+/* Pass 3: force hand overflow at phone widths so ◀/▶ always do work with 5 cards */
+@media (max-width: 520px) {
+  .combat-hand {
+    overflow-x: scroll;
+  }
+  .combat-card {
+    width: 6.35rem;
+    min-width: 6.35rem;
+    flex: 0 0 6.35rem;
+  }
+}
+
+
+/* Pass 3 viewport contain — hand must scroll inside, not expand the page */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+.wrap, .panel, .combat-panel, .grid-2 {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.combat-hand {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
+  max-width: min(100%, calc(100vw - 2.5rem)) !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-x: contain;
+  box-sizing: border-box !important;
+}
+.combat-card {
+  flex: 0 0 auto !important;
+}
+@media (max-width: 520px) {
+  .combat-card {
+    width: 7rem !important;
+    min-width: 7rem !important;
+    flex: 0 0 7rem !important;
   }
 }
