@@ -24,3 +24,8 @@
 ## DNS (Phil 2026-09-09)
 - Use **secdevsolutions.help** for sample now.
 - Custom domain via NameSilo **later** — do not block Codex on domain purchase.
+
+## Pass 2 (Phil 2026-09-09)
+- Improve loop using **Might & Magic–style card combat patterns** (heroes, creatures, resource pacing, readable turns) — **original IP only**
+- Keep GM-light, all-ages free starter, mock unlock, images/effects, NightDeck untouched
+- Prefer one improve pass then STOP; no Lilly

@@ -13,8 +13,25 @@
         "type": "choice",
         "prompt": "How do you enter?",
         "options": [
-          { "id": "brave", "label": "March in bravely (banter)", "effect": "banter", "check": null, "successText": "You stamp down the stairs together, trading jokes. The hatch thumps shut behind you—friendly, somehow.", "failText": null },
-          { "id": "sneak", "label": "Tip-toe carefully (check: Care)", "effect": "hit", "check": { "stat": "care", "dc": 3 }, "successText": "Soft steps. No squeaks. The cellar welcomes you like a secret clubhouse.", "failText": "A step squeaks loudly—everyone freezes, then laughs. You still make it down. Fail-forward!" }
+          {
+            "id": "brave",
+            "label": "March in bravely (banter)",
+            "effect": "banter",
+            "check": null,
+            "successText": "You stamp down the stairs together, trading jokes. The hatch thumps shut behind you\u2014friendly, somehow.",
+            "failText": null
+          },
+          {
+            "id": "sneak",
+            "label": "Tip-toe carefully (check: Care)",
+            "effect": "hit",
+            "check": {
+              "stat": "care",
+              "dc": 3
+            },
+            "successText": "Soft steps. No squeaks. The cellar welcomes you like a secret clubhouse.",
+            "failText": "A step squeaks loudly\u2014everyone freezes, then laughs. You still make it down. Fail-forward!"
+          }
         ]
       }
     },
@@ -22,13 +39,30 @@
       "id": "treasure",
       "title": "The Glow-Chest Nook",
       "image": "assets/rooms/treasure.png",
-      "narration": "A small chest sits on a barrel, glowing gold. A note reads: 'For brave friends—share what you find.'",
+      "narration": "A small chest sits on a barrel, glowing gold. A note reads: 'For brave friends\u2014share what you find.'",
       "action": {
         "type": "choice",
         "prompt": "What do you do with the chest?",
         "options": [
-          { "id": "open", "label": "Open it together (loot)", "effect": "loot", "check": null, "successText": "Inside: sticky toffee coins and a map scrap. Everyone gets a shiny souvenir.", "failText": null },
-          { "id": "study", "label": "Study the rune lock (check: Wit)", "effect": "loot", "check": { "stat": "wit", "dc": 3 }, "successText": "The rune clicks open. Bonus: a tiny brass dad-joke whistle.", "failText": "The lock shrugs and pops open anyway. You get the toffee coins—plus a mild sticky-finger curse that wears off in one room." }
+          {
+            "id": "open",
+            "label": "Open it together (loot)",
+            "effect": "loot",
+            "check": null,
+            "successText": "Inside: sticky toffee coins and a map scrap. Everyone gets a shiny souvenir.",
+            "failText": null
+          },
+          {
+            "id": "study",
+            "label": "Study the rune lock (check: Wit)",
+            "effect": "loot",
+            "check": {
+              "stat": "wit",
+              "dc": 3
+            },
+            "successText": "The rune clicks open. Bonus: a tiny brass dad-joke whistle.",
+            "failText": "The lock shrugs and pops open anyway. You get the toffee coins\u2014plus a mild sticky-finger curse that wears off in one room."
+          }
         ]
       }
     },
@@ -41,8 +75,25 @@
         "type": "choice",
         "prompt": "How do you cross?",
         "options": [
-          { "id": "hop", "label": "Hop the safe tiles (check: Grit)", "effect": "trap", "check": { "stat": "grit", "dc": 3 }, "successText": "Perfect hops. The tickle trap stays asleep. You high-five mid-air.", "failText": "A tile giggles and sprays harmless glitter foam. You're damp, sparkling, and still across the hall." },
-          { "id": "pole", "label": "Prod with a broom pole (trap)", "effect": "trap", "check": null, "successText": "Foam sprays the broom, not you. Clever—and very sticky. Onward!", "failText": null }
+          {
+            "id": "hop",
+            "label": "Hop the safe tiles (check: Grit)",
+            "effect": "trap",
+            "check": {
+              "stat": "grit",
+              "dc": 3
+            },
+            "successText": "Perfect hops. The tickle trap stays asleep. You high-five mid-air.",
+            "failText": "A tile giggles and sprays harmless glitter foam. You're damp, sparkling, and still across the hall."
+          },
+          {
+            "id": "pole",
+            "label": "Prod with a broom pole (trap)",
+            "effect": "trap",
+            "check": null,
+            "successText": "Foam sprays the broom, not you. Clever\u2014and very sticky. Onward!",
+            "failText": null
+          }
         ]
       }
     },
@@ -55,8 +106,25 @@
         "type": "choice",
         "prompt": "Offer a party banter beat:",
         "options": [
-          { "id": "cheer", "label": "Cheer a teammate (banter)", "effect": "banter", "check": null, "successText": "The mirror sparkles. Confidence +1 (flavor). The cellar feels brighter.", "failText": null },
-          { "id": "riddle", "label": "Answer the mirror's riddle (check: Wit)", "effect": "banter", "check": { "stat": "wit", "dc": 2 }, "successText": "You nail it: 'What has keys but opens no doors? A dad joke piano!' The mirror bows.", "failText": "Wrong answer—but the mirror laughs kindly and waves you on. Fail-forward with warm applause." }
+          {
+            "id": "cheer",
+            "label": "Cheer a teammate (banter)",
+            "effect": "banter",
+            "check": null,
+            "successText": "The mirror sparkles. Confidence +1 (flavor). The cellar feels brighter.",
+            "failText": null
+          },
+          {
+            "id": "riddle",
+            "label": "Answer the mirror's riddle (check: Wit)",
+            "effect": "banter",
+            "check": {
+              "stat": "wit",
+              "dc": 2
+            },
+            "successText": "You nail it: 'What has keys but opens no doors? A dad joke piano!' The mirror bows.",
+            "failText": "Wrong answer\u2014but the mirror laughs kindly and waves you on. Fail-forward with warm applause."
+          }
         ]
       }
     },
@@ -64,20 +132,20 @@
       "id": "boss",
       "title": "The Grumpy Barrel King",
       "image": "assets/rooms/boss.png",
-      "narration": "A big barrel with stick-on googly eyes blocks the stair back up. It growls: 'Nobody leaves without a hug... I mean, a challenge!'",
+      "narration": "A big barrel with stick-on googly eyes blocks the stair back up. It growls: 'Nobody leaves without a hug... I mean, a card challenge!' Play allies from your party hand \u2014 spend Energy each turn.",
       "action": {
-        "type": "choice",
-        "prompt": "Face the Barrel King:",
-        "options": [
-          { "id": "wrestle", "label": "Friendly wrestle (check: Grit)", "effect": "hit", "check": { "stat": "grit", "dc": 3 }, "successText": "You tip the barrel into a hug-roll. It declares you champions and rolls aside.", "failText": "It bonks you with a soft cork. You still roll it aside together—victory with a bruise that looks like a smile." },
-          { "id": "joke", "label": "Tell a dad joke (banter)", "effect": "banter", "check": null, "successText": "\"Why did the barrel go to school? To improve its cask-et!\" The King wheezes with laughter and yields the stairs.", "failText": null },
-          { "id": "charm", "label": "Offer sticky toffee (loot)", "effect": "loot", "check": null, "successText": "Bribery succeeds. The Barrel King becomes a lifelong snack ally. Stairs clear!", "failText": null }
-        ]
+        "type": "combat",
+        "prompt": "Card combat \u2014 play allies, then End turn to resolve hits"
+      },
+      "type": "combat",
+      "combat": {
+        "enemyId": "barrel-king",
+        "prompt": "Card combat \u2014 play allies, then End turn to resolve hits"
       }
     }
   ],
   "ending": {
     "title": "Back to the Tavern",
-    "blurb": "You climb into warm lantern light. Dad applauds. The cellar of kindness is cleared—and the sticky toffee tastes like victory."
+    "blurb": "You climb into warm lantern light. Dad applauds. The cellar of kindness is cleared\u2014and the sticky toffee tastes like victory."
   }
 }

@@ -1,0 +1,96 @@
+{
+  "resourceName": "Energy",
+  "energyPerTurn": 3,
+  "energyMax": 5,
+  "handSize": 5,
+  "heroes": {
+    "defaultHp": 8,
+    "hpPerGrit": 1
+  },
+  "allies": [
+    {
+      "id": "cinnamon-sprite",
+      "name": "Cinnamon Sprite",
+      "cost": 1,
+      "atk": 1,
+      "hp": 2,
+      "emoji": "✨",
+      "blurb": "A sweet spark that nips at grumpy barrels."
+    },
+    {
+      "id": "lantern-pup",
+      "name": "Lantern Pup",
+      "cost": 2,
+      "atk": 2,
+      "hp": 2,
+      "emoji": "🏮",
+      "blurb": "Wags a warm glow into dark corners."
+    },
+    {
+      "id": "broom-buddy",
+      "name": "Broom Buddy",
+      "cost": 2,
+      "atk": 1,
+      "hp": 3,
+      "emoji": "🧹",
+      "blurb": "Sweeps foes aside with cheerful thwacks."
+    },
+    {
+      "id": "toffee-guard",
+      "name": "Toffee Guard",
+      "cost": 3,
+      "atk": 2,
+      "hp": 4,
+      "emoji": "🛡️",
+      "blurb": "Sticky shield, stickier loyalty."
+    },
+    {
+      "id": "kindness-cub",
+      "name": "Kindness Cub",
+      "cost": 3,
+      "atk": 3,
+      "hp": 3,
+      "emoji": "🧸",
+      "blurb": "Hugs hard enough to tip a king."
+    },
+    {
+      "id": "joke-jester",
+      "name": "Joke Jester",
+      "cost": 1,
+      "atk": 2,
+      "hp": 1,
+      "emoji": "🃏",
+      "blurb": "Dad jokes that deal surprise poke damage."
+    },
+    {
+      "id": "map-moth",
+      "name": "Map Moth",
+      "cost": 2,
+      "atk": 1,
+      "hp": 4,
+      "emoji": "🦋",
+      "blurb": "Flutter tank that marks the safe path."
+    },
+    {
+      "id": "cellar-choir",
+      "name": "Cellar Choir",
+      "cost": 4,
+      "atk": 3,
+      "hp": 4,
+      "emoji": "🎶",
+      "blurb": "Harmonizes until the barrel yields."
+    }
+  ],
+  "enemies": {
+    "barrel-king": {
+      "id": "barrel-king",
+      "name": "Grumpy Barrel King",
+      "hp": 12,
+      "atk": 2,
+      "emoji": "🛢️",
+      "blurb": "Googly-eyed barrel boss. Soft corks only — all ages.",
+      "winText": "Your allies tip the Barrel King into a hug-roll. It declares you champions and rolls aside.",
+      "loseText": "The Barrel King bonks you with a soft cork — then yawns and rolls aside anyway. Fail-forward!"
+    }
+  }
+}

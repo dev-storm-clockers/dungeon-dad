@@ -47,6 +47,41 @@
             </div>
           </div>
 
+          <div id="combat-panel" class="combat-panel" hidden>
+            <div class="combat-turnbar" id="combat-turnbar" aria-live="polite">
+              <span class="combat-whose" id="combat-whose">Party turn</span>
+              <span class="combat-energy" id="combat-energy" title="Spendable Energy">Energy 0</span>
+              <span class="combat-turnnum" id="combat-turnnum">Turn 1</span>
+            </div>
+            <p class="hint" id="combat-hand-label">Party hand (shared)</p>
+
+            <div class="combat-board">
+              <div class="combat-side enemy-side">
+                <div class="combat-label">Foe</div>
+                <div class="combat-enemy" id="combat-enemy"></div>
+              </div>
+              <div class="combat-side ally-side">
+                <div class="combat-label">Heroes</div>
+                <div class="combat-heroes" id="combat-heroes"></div>
+                <div class="combat-label">Allies in play</div>
+                <div class="combat-allies" id="combat-allies"></div>
+              </div>
+            </div>
+
+            <div class="combat-label">Hand — tap a card you can afford (gold border = legal)</div>
+            <div class="combat-hand" id="combat-hand"></div>
+
+            <div class="row combat-actions">
+              <button type="button" class="btn gold" id="btn-end-turn">End turn (resolve hits)</button>
+              <button type="button" class="btn ghost" id="btn-concede" title="Fail-forward — never soft-locks">Yield (fail-forward)</button>
+            </div>
+            <div id="combat-result-box" class="result-box" hidden></div>
+            <div class="row" style="margin-top:0.75rem">
+              <button type="button" class="btn" id="btn-combat-continue" hidden>Continue</button>
+            </div>
+            <ul class="combat-log" id="combat-log" aria-label="Combat log"></ul>
+          </div>
+
           <div id="ended-inline" hidden>
             <p class="muted">Run complete — open the shareable recap.</p>
             <div class="row">
@@ -74,12 +109,16 @@
   <script src="js/session.js"></script>
   <script src="js/party.js"></script>
   <script src="js/dungeon.js"></script>
+  <script src="js/combat.js"></script>
   <script src="js/effects.js"></script>
   <script src="js/ui.js"></script>
   <script>
     (async function () {
       DDUI.ensureFooter();
-      const packs = await DDDungeon.loadPacks();
+      const [packs] = await Promise.all([
+        DDDungeon.loadPacks(),
+        DDCombat.loadCatalog()
+      ]);
       const active = DDSession.getActive();
       if (!active || !active.code) {
         location.href = 'index.html';
@@ -94,11 +133,22 @@
       }
 
       const isHost = active.role === 'host' || active.playerId === session.hostId;
+      const urlParams = new URLSearchParams(location.search);
+      const wantBoss = urlParams.get('room') === 'boss';
+
       DDUI.$('#code-display').textContent = session.code;
       DDUI.$('#adventure-title').textContent = packs.starter.title;
       DDUI.$('#role-hint').textContent = isHost
         ? 'You are the host. Pace rooms with the Start / action buttons.'
         : 'You are a player. Host paces rooms; your character is on the roster.';
+
+      function bossRoomIndex() {
+        const rooms = packs.starter.rooms || [];
+        const idx = rooms.findIndex(function (r) {
+          return r.id === 'boss' || DDCombat.isCombatRoom(r);
+        });
+        return idx >= 0 ? idx : 4;
+      }
 
       function refreshUnlock() {
         DDUI.updateUnlockBadge();
@@ -124,6 +174,192 @@
 
       let awaitingContinue = false;
 
+      function hideCombatPanel() {
+        DDUI.show(DDUI.$('#combat-panel'), false);
+      }
+
+      function renderCombatResult(room) {
+        const panel = DDUI.$('#combat-panel');
+        DDUI.show(panel, true);
+        DDUI.show(DDUI.$('#play-controls'), false);
+
+        // Hide interactive combat chrome while showing result
+        DDUI.show(DDUI.$('#combat-hand'), false);
+        DDUI.show(DDUI.$('#combat-board'), false);
+        DDUI.show(DDUI.$('.combat-actions'), false);
+        DDUI.show(DDUI.$('#combat-hand-label'), false);
+        const labels = panel.querySelectorAll('.combat-label');
+        labels.forEach(function (el) { el.hidden = true; });
+
+        const resultBox = DDUI.$('#combat-result-box');
+        const btnContinue = DDUI.$('#btn-combat-continue');
+        DDUI.show(resultBox, true);
+        const last = session.lastResult;
+        resultBox.className = 'result-box' + (last && last.passed ? '' : ' fail');
+        const ff = last && last.failForward ? ' Fail-forward — the story still advances.' : '';
+        resultBox.textContent = (last && last.actorName ? last.actorName + ': ' : '') +
+          (last && last.text ? last.text : 'Combat resolved.') + ff;
+        DDUI.show(btnContinue, isHost);
+
+        DDUI.$('#combat-whose').textContent = last && last.passed ? 'Victory!' : 'Yielded (fail-forward)';
+        DDUI.$('#combat-energy').textContent = 'Energy —';
+        DDUI.$('#combat-turnnum').textContent = last && last.combatSummary
+          ? ('Turns ' + last.combatSummary.turns)
+          : '';
+
+        const logEl = DDUI.$('#combat-log');
+        logEl.innerHTML = '';
+      }
+
+      function renderCombatActive(combat, room) {
+        const panel = DDUI.$('#combat-panel');
+        DDUI.show(panel, true);
+        DDUI.show(DDUI.$('#play-controls'), false);
+
+        DDUI.show(DDUI.$('#combat-hand'), true);
+        DDUI.show(DDUI.$('#combat-board'), true);
+        DDUI.show(DDUI.$('.combat-actions'), true);
+        DDUI.show(DDUI.$('#combat-hand-label'), true);
+        panel.querySelectorAll('.combat-label').forEach(function (el) { el.hidden = false; });
+
+        DDUI.show(DDUI.$('#combat-result-box'), false);
+        DDUI.show(DDUI.$('#btn-combat-continue'), false);
+
+        const whoseLabel = combat.whose === 'party'
+          ? (combat.soloLabeled ? 'Party turn (solo dry-run)' : 'Party turn')
+          : (combat.whose === 'enemy' ? 'Enemy resolving…' : 'Done');
+        DDUI.$('#combat-whose').textContent = whoseLabel;
+        DDUI.$('#combat-energy').textContent = 'Energy ' + combat.energy + ' / ' + (combat.energyMax || 5);
+        DDUI.$('#combat-turnnum').textContent = 'Turn ' + combat.turn;
+
+        // Enemy
+        const enemyEl = DDUI.$('#combat-enemy');
+        enemyEl.innerHTML = '';
+        const enemyChip = document.createElement('div');
+        enemyChip.className = 'combat-chip enemy-chip';
+        enemyChip.innerHTML =
+          '<span class="chip-emoji">' + (combat.enemyEmoji || '🛢️') + '</span>' +
+          '<span class="chip-name">' + combat.enemyName + '</span>' +
+          '<span class="chip-hp">HP ' + combat.enemyHp + '/' + combat.enemyMaxHp + '</span>' +
+          '<span class="chip-atk">ATK ' + (combat.enemyAtk || 1) + '</span>';
+        enemyEl.appendChild(enemyChip);
+
+        // Heroes
+        const heroesEl = DDUI.$('#combat-heroes');
+        heroesEl.innerHTML = '';
+        (combat.heroes || []).forEach(function (h) {
+          const chip = document.createElement('div');
+          chip.className = 'combat-chip hero-chip' + (h.hp <= 0 ? ' fainted' : '');
+          chip.style.setProperty('--look', h.color || '#2a9d8f');
+          chip.innerHTML =
+            '<span class="chip-emoji">' + (h.emoji || '🛡️') + '</span>' +
+            '<span class="chip-name">' + h.name + '</span>' +
+            '<span class="chip-hp">HP ' + h.hp + '/' + h.maxHp + '</span>';
+          heroesEl.appendChild(chip);
+        });
+
+        // Board allies
+        const alliesEl = DDUI.$('#combat-allies');
+        alliesEl.innerHTML = '';
+        const board = (combat.board || []).filter(function (u) { return u.hp > 0; });
+        if (!board.length) {
+          const empty = document.createElement('p');
+          empty.className = 'hint';
+          empty.textContent = 'No allies in play yet — tap a legal hand card.';
+          alliesEl.appendChild(empty);
+        } else {
+          board.forEach(function (u) {
+            const chip = document.createElement('div');
+            chip.className = 'combat-chip ally-chip';
+            chip.innerHTML =
+              '<span class="chip-emoji">' + (u.emoji || '🃏') + '</span>' +
+              '<span class="chip-name">' + u.name + '</span>' +
+              '<span class="chip-stats">ATK ' + u.atk + ' · HP ' + u.hp + '/' + u.maxHp + '</span>';
+            alliesEl.appendChild(chip);
+          });
+        }
+
+        // Hand
+        const handEl = DDUI.$('#combat-hand');
+        handEl.innerHTML = '';
+        const canAct = isHost && combat.whose === 'party' && !combat.outcome;
+        (combat.hand || []).forEach(function (cardId) {
+          const def = DDCombat.allyById(cardId);
+          if (!def) return;
+          const legal = DDCombat.canPlay(combat, cardId);
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'combat-card' + (legal ? ' legal' : ' illegal');
+          card.disabled = !canAct || !legal;
+          card.title = legal
+            ? ('Play ' + def.name + ' for ' + def.cost + ' Energy')
+            : (canAct ? 'Need ' + def.cost + ' Energy (have ' + combat.energy + ')' : 'Host plays cards');
+          card.innerHTML =
+            '<span class="card-cost">' + def.cost + '</span>' +
+            '<span class="card-emoji">' + (def.emoji || '🃏') + '</span>' +
+            '<span class="card-name">' + def.name + '</span>' +
+            '<span class="card-stats">' + def.atk + '/' + def.hp + '</span>';
+          if (canAct && legal) {
+            card.addEventListener('click', function () {
+              session = DDSession.read(active.code) || session;
+              const res = DDCombat.playCard(session, cardId);
+              if (!res || !res.ok) {
+                DDUI.toast((res && res.error) || 'Cannot play');
+                return;
+              }
+              DDSession.write(session);
+              if (res.effect) DDEffects.play(res.effect, DDEffects.kindLabel(res.effect));
+              if (session.combat && session.combat.outcome) {
+                finishCombat(room);
+                return;
+              }
+              render();
+            });
+          }
+          handEl.appendChild(card);
+        });
+
+        // Actions enabled state
+        const btnEnd = DDUI.$('#btn-end-turn');
+        const btnConcede = DDUI.$('#btn-concede');
+        btnEnd.disabled = !canAct;
+        btnConcede.disabled = !(isHost && !combat.outcome);
+        if (!isHost) {
+          btnEnd.title = 'Host ends the turn';
+          btnConcede.title = 'Host may yield (fail-forward)';
+        }
+
+        // Log
+        const logEl = DDUI.$('#combat-log');
+        logEl.innerHTML = '';
+        (combat.log || []).slice().reverse().forEach(function (entry) {
+          const li = document.createElement('li');
+          li.textContent = entry.text;
+          logEl.appendChild(li);
+        });
+      }
+
+      function finishCombat(room) {
+        const result = DDCombat.finalizeToRoomResult(session, room);
+        DDSession.write(session);
+        if (result && result.effect) {
+          DDEffects.play(result.effect, DDEffects.kindLabel(result.effect));
+        }
+        awaitingContinue = true;
+        render();
+      }
+
+      function ensureCombat(room) {
+        if (awaitingContinue && session.lastResult && session.lastResult.roomId === room.id) {
+          return null; // result pending — do not restart
+        }
+        if (!session.combat || session.combat.roomId !== room.id) {
+          DDCombat.beginCombat(session, room);
+          DDSession.write(session);
+        }
+        return session.combat;
+      }
+
       function render() {
         session = DDSession.read(active.code) || session;
         if (session.pendingAdvance) awaitingContinue = true;
@@ -134,6 +370,7 @@
         if (session.phase === 'ended' || DDDungeon.isComplete(session)) {
           DDUI.show(DDUI.$('#lobby-controls'), false);
           DDUI.show(DDUI.$('#play-controls'), false);
+          hideCombatPanel();
           DDUI.show(DDUI.$('#ended-inline'), true);
           const last = session.lastResult;
           if (last) {
@@ -151,6 +388,7 @@
         if (session.phase === 'lobby') {
           DDUI.show(DDUI.$('#lobby-controls'), true);
           DDUI.show(DDUI.$('#play-controls'), false);
+          hideCombatPanel();
           DDUI.show(DDUI.$('#ended-inline'), false);
           DDUI.show(DDUI.$('#btn-start'), isHost);
           const first = packs.starter.rooms[0];
@@ -165,7 +403,6 @@
         // playing
         DDUI.show(DDUI.$('#lobby-controls'), false);
         DDUI.show(DDUI.$('#ended-inline'), false);
-        DDUI.show(DDUI.$('#play-controls'), true);
 
         const room = DDDungeon.currentRoom(session);
         if (!room) {
@@ -179,6 +416,25 @@
         DDUI.$('#room-image').src = room.image;
         DDUI.$('#room-caption').textContent = room.title;
         DDUI.$('#room-narration').textContent = room.narration;
+
+        if (DDCombat.isCombatRoom(room)) {
+          DDUI.show(DDUI.$('#play-controls'), false);
+          if (awaitingContinue && session.lastResult && session.lastResult.roomId === room.id) {
+            renderCombatResult(room);
+            return;
+          }
+          const combat = ensureCombat(room);
+          if (!combat) {
+            hideCombatPanel();
+            return;
+          }
+          renderCombatActive(combat, room);
+          return;
+        }
+
+        // Choice rooms
+        hideCombatPanel();
+        DDUI.show(DDUI.$('#play-controls'), true);
         DDUI.$('#action-prompt').textContent = room.action.prompt;
 
         const list = DDUI.$('#action-list');
@@ -207,7 +463,7 @@
             btn.type = 'button';
             btn.className = 'btn action-btn';
             btn.textContent = opt.label;
-            btn.disabled = !canAct || !isHost; // host paces actions in sample
+            btn.disabled = !canAct || !isHost;
             if (!isHost) {
               btn.title = 'Host chooses the party action in this sample';
             }
@@ -218,7 +474,6 @@
               DDSession.write(session);
               DDEffects.play(result.effect, DDEffects.kindLabel(result.effect));
               awaitingContinue = true;
-              // If ended, still show result then continue goes to end
               render();
             });
             list.appendChild(btn);
@@ -229,17 +484,39 @@
             note.textContent = 'Watch the roster and wait for the host to pick an action.';
             list.appendChild(note);
           }
+          // Host-only smoke skip to Barrel King (room index 4)
+          if (isHost) {
+            const skip = document.createElement('button');
+            skip.type = 'button';
+            skip.className = 'btn ghost skip-boss';
+            skip.textContent = 'Skip to Barrel King (debug)';
+            skip.title = 'Jump to room index 4 — card combat boss';
+            skip.addEventListener('click', function () {
+              session = DDSession.read(active.code) || session;
+              session.roomIndex = bossRoomIndex();
+              session.pendingAdvance = false;
+              session.lastResult = null;
+              session.combat = null;
+              awaitingContinue = false;
+              DDSession.write(session);
+              render();
+            });
+            list.appendChild(skip);
+          }
         }
       }
 
       DDUI.$('#btn-start').addEventListener('click', function () {
         if (!isHost) return;
-        // AC: host+≥1 joined player, OR explicitly labeled solo dry-run
         if ((session.party || []).length < 2 && !session.solo) {
           session.solo = true;
           DDUI.toast('Solo dry-run — labeled (no joined player yet)');
         }
         DDDungeon.startRun(session);
+        if (wantBoss) {
+          session.roomIndex = bossRoomIndex();
+          DDUI.toast('Smoke: jumped to Barrel King (room index ' + session.roomIndex + ')');
+        }
         DDSession.write(session);
         awaitingContinue = false;
         render();
@@ -258,13 +535,56 @@
         render();
       });
 
+      DDUI.$('#btn-combat-continue').addEventListener('click', function () {
+        if (!isHost) return;
+        session = DDSession.read(active.code) || session;
+        DDDungeon.advanceAfterResult(session);
+        DDSession.write(session);
+        awaitingContinue = false;
+        if (session.phase === 'ended' || DDDungeon.isComplete(session)) {
+          location.href = 'end.html';
+          return;
+        }
+        render();
+      });
+
+      DDUI.$('#btn-end-turn').addEventListener('click', function () {
+        if (!isHost) return;
+        session = DDSession.read(active.code) || session;
+        const room = DDDungeon.currentRoom(session);
+        if (!room || !session.combat) return;
+        const res = DDCombat.endTurn(session);
+        if (!res || !res.ok) {
+          DDUI.toast((res && res.error) || 'Cannot end turn');
+          return;
+        }
+        DDSession.write(session);
+        if (res.effect) DDEffects.play(res.effect, DDEffects.kindLabel(res.effect));
+        if (res.outcome) {
+          finishCombat(room);
+          return;
+        }
+        render();
+      });
+
+      DDUI.$('#btn-concede').addEventListener('click', function () {
+        if (!isHost) return;
+        session = DDSession.read(active.code) || session;
+        const room = DDDungeon.currentRoom(session);
+        if (!room || !session.combat) return;
+        const res = DDCombat.concede(session);
+        if (!res || !res.ok) return;
+        DDSession.write(session);
+        if (res.effect) DDEffects.play(res.effect, DDEffects.kindLabel(res.effect));
+        finishCombat(room);
+      });
+
       DDSession.onUpdate(function (msg) {
         if (msg && msg.code && msg.code !== active.code) return;
         if (msg && msg.type === 'unlock') { refreshUnlock(); return; }
         const fresh = DDSession.read(active.code);
         if (!fresh) return;
-        // Sync awaitingContinue if room advanced elsewhere
-        if (fresh.pendingAdvance && (!session.lastResult || fresh.lastResult.at !== session.lastResult.at)) {
+        if (fresh.pendingAdvance && (!session.lastResult || (fresh.lastResult && session.lastResult && fresh.lastResult.at !== session.lastResult.at))) {
           awaitingContinue = true;
           if (fresh.lastEffect) DDEffects.play(fresh.lastEffect, DDEffects.kindLabel(fresh.lastEffect));
         }
@@ -275,6 +595,7 @@
 
       render();
     })();
+  </script>
   </script>
 
   <footer class="site-footer">

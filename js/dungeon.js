@@ -96,6 +96,7 @@
     session.lastResult = null;
     session.lastEffect = null;
     session.pendingAdvance = false;
+    session.combat = null;
     return session;
   }
 
