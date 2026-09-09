@@ -29,3 +29,7 @@
 - Improve loop using **Might & Magic–style card combat patterns** (heroes, creatures, resource pacing, readable turns) — **original IP only**
 - Keep GM-light, all-ages free starter, mock unlock, images/effects, NightDeck untouched
 - Prefer one improve pass then STOP; no Lilly
+
+## Pass 3 (Phil 2026-09-09)
+- Nicer motion: static + CSS/Web Animations (defer React Vite rewrite)
+- Prefer one pass then STOP; Pages first; no Lilly unless Phil yes

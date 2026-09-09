@@ -14,7 +14,9 @@
     Natural path: Continue through rooms 1–4 (entrance → treasure → trap → banter → boss).
 - **live_url:** https://dev-storm-clockers.github.io/dungeon-dad/
 - **owner_agent:** Build Head
-- **ready_for_quality:** yes
-- **pass:** 2
+- **ready_for_quality:** no
+- **pass:** 3 (nicer motion — static CSS/WAAPI; ready=no until smoke)
 - **notes:** |
-  **Pass 2 live smoke 2026-09-09 (Build):** PASS on https://dev-storm-clockers.github.io/dungeon-dad/ commit `c3aa5e6`. Hero+hand, Energy spend/play (3/5→2/5), Barrel King card combat, gold legal plays, Yield fail-forward → end.html; MVP join/roster/mock unlock/Productions footer; combat.js + cards.json 200; no JS errors (favicon 404 only). AC: AC-mvp.md + AC-change-pass2-card.md. Prefer STOP-GO. Lilly/TLS halted (token bleed) — TLS URL not required. NightDeck untouched. No Lilly from Build.
+  **Pass 3 done (local):** AC `/workspace/dungeon-dad/AC-change-pass3-nicer.md` — card hand→board FLIP/enter (~400ms), faint exit, chip hit shake ≥360ms + DDEffects, whose/energy chrome pulse, hand deal stagger, mobile combat CSS (~375px). No React/Framer/Rive. NightDeck untouched. Prefer STOP — no Lilly.
+
+  **Pass 2 STOP-GO:** https://dev-storm-clockers.github.io/dungeon-dad/ (`c3aa5e6` / ARTIFACT `b89f2e8`).

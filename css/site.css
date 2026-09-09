@@ -728,3 +728,177 @@ input:focus, select:focus, textarea:focus {
   opacity: 0.75;
   margin-top: 0.35rem;
 }
+
+/* ——— Pass 3 nicer motion ——— */
+html {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+.combat-panel {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.combat-whose.fx-chrome-pulse,
+.combat-energy.fx-chrome-pulse {
+  animation: chrome-pulse 0.45s ease-out;
+}
+
+@keyframes chrome-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(244, 211, 94, 0); transform: scale(1); }
+  35% {
+    box-shadow: 0 0 0 4px rgba(244, 211, 94, 0.45);
+    background: rgba(244, 211, 94, 0.22);
+    transform: scale(1.04);
+  }
+  100% { box-shadow: 0 0 0 0 rgba(244, 211, 94, 0); transform: scale(1); }
+}
+
+.combat-whose {
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  border-radius: 8px;
+}
+
+.combat-chip.fx-chip-hit {
+  animation: chip-hit 0.36s ease-in-out;
+  z-index: 2;
+}
+
+@keyframes chip-hit {
+  0%, 100% { transform: translateX(0); filter: brightness(1); }
+  15% { transform: translateX(-7px); filter: brightness(1.45); }
+  35% { transform: translateX(7px); filter: brightness(1.2); }
+  55% { transform: translateX(-4px); filter: brightness(1.35); }
+  75% { transform: translateX(4px); }
+}
+
+.combat-chip.fx-card-enter {
+  animation: card-enter 0.4s ease-out;
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(36px) scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.combat-chip.fx-card-exit {
+  animation: card-exit 0.4s ease-in forwards;
+  pointer-events: none;
+  opacity: 0.95;
+}
+
+@keyframes card-exit {
+  0% { opacity: 1; transform: scale(1) translateY(0); filter: none; }
+  55% { opacity: 0.55; transform: scale(0.92) translateY(6px); filter: grayscale(0.4); }
+  100% { opacity: 0; transform: scale(0.7) translateY(18px); filter: grayscale(0.8); }
+}
+
+.combat-card.fx-deal {
+  animation: hand-deal 0.42s ease-out both;
+}
+
+@keyframes hand-deal {
+  from {
+    opacity: 0;
+    transform: translateY(28px) rotate(-4deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0) scale(1);
+  }
+}
+
+.combat-card.fx-deal-drawn {
+  animation: hand-deal 0.38s ease-out both;
+}
+
+/* Ghost flight card used during hand→board play */
+.combat-fly {
+  position: fixed;
+  z-index: 90;
+  pointer-events: none;
+  margin: 0;
+  transition: none;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+}
+
+/* Phone combat — ~375px mindset */
+@media (max-width: 420px) {
+  .wrap {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+  }
+
+  .combat-panel {
+    padding: 0.55rem 0.55rem;
+  }
+
+  .combat-turnbar {
+    gap: 0.35rem;
+    padding: 0.45rem 0.5rem;
+  }
+
+  .combat-whose {
+    font-size: 0.92rem;
+  }
+
+  .combat-hand {
+    margin-left: -0.15rem;
+    margin-right: -0.15rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    gap: 0.4rem;
+  }
+
+  .combat-card {
+    width: 5.5rem;
+    min-width: 5.5rem;
+    min-height: 6.6rem;
+    /* ≥44px tap height already; keep easy thumb target */
+    touch-action: manipulation;
+  }
+
+  .combat-actions {
+    flex-wrap: wrap;
+  }
+
+  .combat-actions .btn {
+    min-height: 44px;
+    flex: 1 1 auto;
+  }
+
+  .combat-chip {
+    min-width: 4.6rem;
+    min-height: 44px;
+  }
+
+  .combat-board {
+    gap: 0.45rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .combat-chip.fx-chip-hit,
+  .combat-chip.fx-card-enter,
+  .combat-chip.fx-card-exit,
+  .combat-card.fx-deal,
+  .combat-card.fx-deal-drawn,
+  .combat-whose.fx-chrome-pulse,
+  .combat-energy.fx-chrome-pulse {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

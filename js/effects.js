@@ -1,5 +1,6 @@
 /**
  * Dungeon Dad — visible CSS effect triggers (hit / loot / trap / banter)
+ * Pass 3: chip shake + chrome pulse helpers (CSS / brief class timers).
  */
 (function (global) {
   const CLASSES = ['fx-hit', 'fx-loot', 'fx-trap', 'fx-banter'];
@@ -51,9 +52,36 @@
     }
   }
 
+  /** Brief CSS class pulse (≥300ms) on an element — used for turn/energy chrome. */
+  function pulse(el, className, ms) {
+    if (!el) return;
+    const cls = className || 'fx-chrome-pulse';
+    const dur = ms == null ? 450 : ms;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    window.setTimeout(function () {
+      el.classList.remove(cls);
+    }, dur);
+  }
+
+  /** Shake / flash a combat chip (≥300ms). */
+  function shakeChip(el, ms) {
+    if (!el) return;
+    const dur = ms == null ? 360 : ms;
+    el.classList.remove('fx-chip-hit');
+    void el.offsetWidth;
+    el.classList.add('fx-chip-hit');
+    window.setTimeout(function () {
+      el.classList.remove('fx-chip-hit');
+    }, dur);
+  }
+
   global.DDEffects = {
     play: play,
     clear: clear,
-    kindLabel: kindLabel
+    kindLabel: kindLabel,
+    pulse: pulse,
+    shakeChip: shakeChip
   };
 })(window);

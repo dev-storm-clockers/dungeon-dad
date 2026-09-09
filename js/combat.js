@@ -102,6 +102,7 @@
       nextInstance: 1
     };
 
+    session.combat.dealAnim = true; // UI: stagger hand deal once
     pushLog(session.combat, 'Combat begins vs ' + enemyDef.name + '. Shared party hand ready.');
     return session.combat;
   }
@@ -145,7 +146,7 @@
     };
     combat.board.push(unit);
     pushLog(combat, 'Played ' + def.name + ' (−' + def.cost + ' Energy).');
-    return { ok: true, unit: unit, effect: 'loot' };
+    return { ok: true, unit: unit, effect: 'loot', energy: combat.energy, cost: def.cost };
   }
 
   function livingHeroes(combat) {
@@ -198,7 +199,7 @@
 
     let end = checkEnd(combat);
     if (end) {
-      return { ok: true, strikes: strikes, outcome: end, effect: end === 'win' ? 'banter' : 'hit' };
+      return { ok: true, strikes: strikes, fainted: [], outcome: end, effect: end === 'win' ? 'banter' : 'hit' };
     }
 
     // Enemy attack: prefer damaging an ally, else a hero
@@ -206,12 +207,24 @@
     const dmg = combat.enemyAtk || 1;
     const board = livingBoard(combat);
     let targetLabel = '';
+    let targetKind = 'hero';
+    let targetId = null;
+    const fainted = [];
     if (board.length) {
       const t = board[Math.floor(Math.random() * board.length)];
       t.hp -= dmg;
       targetLabel = t.name;
+      targetKind = 'ally';
+      targetId = t.instanceId;
       if (t.hp <= 0) {
         t.hp = 0;
+        fainted.push({
+          instanceId: t.instanceId,
+          name: t.name,
+          emoji: t.emoji,
+          atk: t.atk,
+          maxHp: t.maxHp
+        });
         pushLog(combat, combat.enemyName + ' bonks ' + t.name + ' for ' + dmg + ' (faints).');
         combat.board = combat.board.filter(function (u) { return u.hp > 0; });
       } else {
@@ -222,29 +235,49 @@
       const t = heroes[Math.floor(Math.random() * heroes.length)];
       t.hp -= dmg;
       targetLabel = t.name;
+      targetKind = 'hero';
+      targetId = t.id;
       if (t.hp < 0) t.hp = 0;
       pushLog(combat, combat.enemyName + ' bonks hero ' + t.name + ' for ' + dmg + '.');
     }
-    strikes.push({ kind: 'enemy', name: combat.enemyName, dmg: dmg, target: targetLabel });
+    strikes.push({
+      kind: 'enemy',
+      name: combat.enemyName,
+      dmg: dmg,
+      target: targetLabel,
+      targetKind: targetKind,
+      targetId: targetId
+    });
 
     end = checkEnd(combat);
     if (end) {
-      return { ok: true, strikes: strikes, outcome: end, effect: 'hit' };
+      return { ok: true, strikes: strikes, fainted: fainted, outcome: end, effect: 'hit' };
     }
 
     // Next party turn
     combat.turn += 1;
     combat.whose = 'party';
     refillEnergy(combat);
+    let drawn = null;
     // Draw 1 if room in hand
     if (combat.deck && combat.deck.length && combat.hand.length < (catalog.handSize || 5)) {
-      combat.hand.push(combat.deck.shift());
+      drawn = combat.deck.shift();
+      combat.hand.push(drawn);
+      combat.dealDrawn = true; // UI: brief deal on drawn card
       pushLog(combat, 'Drew a card. Energy refilled to ' + combat.energy + '.');
     } else {
       pushLog(combat, 'Energy refilled to ' + combat.energy + '. Turn ' + combat.turn + '.');
     }
 
-    return { ok: true, strikes: strikes, outcome: null, effect: 'hit' };
+    return {
+      ok: true,
+      strikes: strikes,
+      fainted: fainted,
+      drawn: drawn,
+      energy: combat.energy,
+      outcome: null,
+      effect: 'hit'
+    };
   }
 
   /** Explicit fail-forward concede — never soft-locks. */

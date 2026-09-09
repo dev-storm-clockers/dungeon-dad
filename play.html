@@ -173,6 +173,18 @@
       }
 
       let awaitingContinue = false;
+      // Pass 3 motion — brief UI flags between combat actions and re-render
+      let motion = {
+        lastWhose: null,
+        lastEnergy: null,
+        enterUnitId: null,
+        enterFromRect: null,
+        strikes: null,
+        fainted: null,
+        pulseWhose: false,
+        pulseEnergy: false,
+        deal: false
+      };
 
       function hideCombatPanel() {
         DDUI.show(DDUI.$('#combat-panel'), false);
@@ -228,15 +240,31 @@
         const whoseLabel = combat.whose === 'party'
           ? (combat.soloLabeled ? 'Party turn (solo dry-run)' : 'Party turn')
           : (combat.whose === 'enemy' ? 'Enemy resolving…' : 'Done');
-        DDUI.$('#combat-whose').textContent = whoseLabel;
-        DDUI.$('#combat-energy').textContent = 'Energy ' + combat.energy + ' / ' + (combat.energyMax || 5);
+        const whoseEl = DDUI.$('#combat-whose');
+        const energyEl = DDUI.$('#combat-energy');
+        const energyText = 'Energy ' + combat.energy + ' / ' + (combat.energyMax || 5);
+        whoseEl.textContent = whoseLabel;
+        energyEl.textContent = energyText;
         DDUI.$('#combat-turnnum').textContent = 'Turn ' + combat.turn;
+
+        // Turn chrome pulse when whose / energy changes
+        if (motion.pulseWhose || (motion.lastWhose != null && motion.lastWhose !== combat.whose)) {
+          if (DDEffects.pulse) DDEffects.pulse(whoseEl, 'fx-chrome-pulse', 450);
+        }
+        if (motion.pulseEnergy || (motion.lastEnergy != null && motion.lastEnergy !== combat.energy)) {
+          if (DDEffects.pulse) DDEffects.pulse(energyEl, 'fx-chrome-pulse', 450);
+        }
+        motion.lastWhose = combat.whose;
+        motion.lastEnergy = combat.energy;
+        motion.pulseWhose = false;
+        motion.pulseEnergy = false;
 
         // Enemy
         const enemyEl = DDUI.$('#combat-enemy');
         enemyEl.innerHTML = '';
         const enemyChip = document.createElement('div');
         enemyChip.className = 'combat-chip enemy-chip';
+        enemyChip.setAttribute('data-chip', 'enemy');
         enemyChip.innerHTML =
           '<span class="chip-emoji">' + (combat.enemyEmoji || '🛢️') + '</span>' +
           '<span class="chip-name">' + combat.enemyName + '</span>' +
@@ -250,6 +278,9 @@
         (combat.heroes || []).forEach(function (h) {
           const chip = document.createElement('div');
           chip.className = 'combat-chip hero-chip' + (h.hp <= 0 ? ' fainted' : '');
+          chip.setAttribute('data-chip', 'hero');
+          chip.setAttribute('data-id', h.id);
+          chip.setAttribute('data-name', h.name);
           chip.style.setProperty('--look', h.color || '#2a9d8f');
           chip.innerHTML =
             '<span class="chip-emoji">' + (h.emoji || '🛡️') + '</span>' +
@@ -262,7 +293,7 @@
         const alliesEl = DDUI.$('#combat-allies');
         alliesEl.innerHTML = '';
         const board = (combat.board || []).filter(function (u) { return u.hp > 0; });
-        if (!board.length) {
+        if (!board.length && !(motion.fainted && motion.fainted.length)) {
           const empty = document.createElement('p');
           empty.className = 'hint';
           empty.textContent = 'No allies in play yet — tap a legal hand card.';
@@ -271,10 +302,30 @@
           board.forEach(function (u) {
             const chip = document.createElement('div');
             chip.className = 'combat-chip ally-chip';
+            chip.setAttribute('data-chip', 'ally');
+            chip.setAttribute('data-instance', u.instanceId);
+            chip.setAttribute('data-name', u.name);
             chip.innerHTML =
               '<span class="chip-emoji">' + (u.emoji || '🃏') + '</span>' +
               '<span class="chip-name">' + u.name + '</span>' +
               '<span class="chip-stats">ATK ' + u.atk + ' · HP ' + u.hp + '/' + u.maxHp + '</span>';
+            if (motion.enterUnitId && motion.enterUnitId === u.instanceId) {
+              chip.classList.add('fx-card-enter');
+            }
+            alliesEl.appendChild(chip);
+          });
+        }
+
+        // Faint exit ghosts (ally removed from board but still animate out)
+        if (motion.fainted && motion.fainted.length) {
+          motion.fainted.forEach(function (f) {
+            const chip = document.createElement('div');
+            chip.className = 'combat-chip ally-chip fx-card-exit';
+            chip.setAttribute('data-chip', 'ally-exit');
+            chip.innerHTML =
+              '<span class="chip-emoji">' + (f.emoji || '🃏') + '</span>' +
+              '<span class="chip-name">' + f.name + '</span>' +
+              '<span class="chip-stats">Fainted</span>';
             alliesEl.appendChild(chip);
           });
         }
@@ -283,7 +334,9 @@
         const handEl = DDUI.$('#combat-hand');
         handEl.innerHTML = '';
         const canAct = isHost && combat.whose === 'party' && !combat.outcome;
-        (combat.hand || []).forEach(function (cardId) {
+        const doDeal = !!(combat.dealAnim || motion.deal);
+        const doDrawn = !!combat.dealDrawn;
+        (combat.hand || []).forEach(function (cardId, idx) {
           const def = DDCombat.allyById(cardId);
           if (!def) return;
           const legal = DDCombat.canPlay(combat, cardId);
@@ -291,6 +344,7 @@
           card.type = 'button';
           card.className = 'combat-card' + (legal ? ' legal' : ' illegal');
           card.disabled = !canAct || !legal;
+          card.setAttribute('data-card-id', cardId);
           card.title = legal
             ? ('Play ' + def.name + ' for ' + def.cost + ' Energy')
             : (canAct ? 'Need ' + def.cost + ' Energy (have ' + combat.energy + ')' : 'Host plays cards');
@@ -299,15 +353,31 @@
             '<span class="card-emoji">' + (def.emoji || '🃏') + '</span>' +
             '<span class="card-name">' + def.name + '</span>' +
             '<span class="card-stats">' + def.atk + '/' + def.hp + '</span>';
+          if (doDeal) {
+            card.classList.add('fx-deal');
+            card.style.animationDelay = (idx * 70) + 'ms';
+          } else if (doDrawn && idx === combat.hand.length - 1) {
+            card.classList.add('fx-deal-drawn');
+          }
           if (canAct && legal) {
-            card.addEventListener('click', function () {
+            card.addEventListener('click', function (ev) {
               session = DDSession.read(active.code) || session;
+              const fromEl = ev.currentTarget;
+              const fromRect = fromEl.getBoundingClientRect();
               const res = DDCombat.playCard(session, cardId);
               if (!res || !res.ok) {
                 DDUI.toast((res && res.error) || 'Cannot play');
                 return;
               }
               DDSession.write(session);
+              motion.enterUnitId = res.unit && res.unit.instanceId;
+              motion.enterFromRect = {
+                left: fromRect.left,
+                top: fromRect.top,
+                width: fromRect.width,
+                height: fromRect.height
+              };
+              motion.pulseEnergy = true;
               if (res.effect) DDEffects.play(res.effect, DDEffects.kindLabel(res.effect));
               if (session.combat && session.combat.outcome) {
                 finishCombat(room);
@@ -318,6 +388,14 @@
           }
           handEl.appendChild(card);
         });
+        if (combat.dealAnim) {
+          combat.dealAnim = false;
+          DDSession.write(session);
+        }
+        if (combat.dealDrawn) {
+          combat.dealDrawn = false;
+        }
+        motion.deal = false;
 
         // Actions enabled state
         const btnEnd = DDUI.$('#btn-end-turn');
@@ -337,6 +415,80 @@
           li.textContent = entry.text;
           logEl.appendChild(li);
         });
+
+        // Post-paint motion: FLIP play, hit shakes, clear faint ghosts flag
+        window.requestAnimationFrame(function () {
+          applyCombatMotion(combat);
+        });
+      }
+
+      function applyCombatMotion(combat) {
+        // Hand → board FLIP fly when a card was just played
+        if (motion.enterUnitId && motion.enterFromRect) {
+          const chip = document.querySelector(
+            '#combat-allies .ally-chip[data-instance="' + motion.enterUnitId + '"]'
+          );
+          const from = motion.enterFromRect;
+          if (chip && from) {
+            const to = chip.getBoundingClientRect();
+            // Prefer WAAPI FLIP; fall back to CSS enter already on chip
+            if (chip.animate) {
+              const dx = from.left - to.left;
+              const dy = from.top - to.top;
+              const sx = from.width / Math.max(to.width, 1);
+              const sy = from.height / Math.max(to.height, 1);
+              chip.animate(
+                [
+                  { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + sx + ',' + sy + ')', opacity: 0.85 },
+                  { transform: 'translate(0,0) scale(1,1)', opacity: 1 }
+                ],
+                { duration: 400, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' }
+              );
+            }
+          }
+          motion.enterUnitId = null;
+          motion.enterFromRect = null;
+        }
+
+        // Hit / resolve shakes ≥300ms
+        if (motion.strikes && motion.strikes.length) {
+          const allyHits = motion.strikes.filter(function (s) { return s.kind === 'ally'; });
+          const enemyHits = motion.strikes.filter(function (s) { return s.kind === 'enemy'; });
+          if (allyHits.length) {
+            const enemyChip = document.querySelector('#combat-enemy .enemy-chip');
+            if (DDEffects.shakeChip) DDEffects.shakeChip(enemyChip, 360);
+            else if (enemyChip) enemyChip.classList.add('fx-chip-hit');
+          }
+          enemyHits.forEach(function (s) {
+            let target = null;
+            if (s.targetKind === 'ally' && s.targetId) {
+              // Fainted ally may only exist as exit ghost — shake that, else living chip by name
+              target = document.querySelector('#combat-allies .ally-chip[data-instance="' + s.targetId + '"]')
+                || document.querySelector('#combat-allies .ally-chip.fx-card-exit');
+            } else if (s.targetId) {
+              target = document.querySelector('#combat-heroes .hero-chip[data-id="' + s.targetId + '"]');
+            }
+            if (!target && s.target) {
+              target = document.querySelector('#combat-heroes .hero-chip[data-name="' + CSS.escape(s.target) + '"]')
+                || document.querySelector('#combat-allies .ally-chip[data-name="' + CSS.escape(s.target) + '"]');
+            }
+            if (DDEffects.shakeChip) DDEffects.shakeChip(target, 360);
+            else if (target) target.classList.add('fx-chip-hit');
+          });
+        }
+        motion.strikes = null;
+
+        // Clear fainted ghosts after exit animation
+        if (motion.fainted && motion.fainted.length) {
+          window.setTimeout(function () {
+            motion.fainted = null;
+            document.querySelectorAll('#combat-allies .fx-card-exit').forEach(function (el) {
+              el.remove();
+            });
+          }, 420);
+        } else {
+          motion.fainted = null;
+        }
       }
 
       function finishCombat(room) {
@@ -355,6 +507,9 @@
         }
         if (!session.combat || session.combat.roomId !== room.id) {
           DDCombat.beginCombat(session, room);
+          motion.deal = true;
+          motion.lastWhose = null;
+          motion.lastEnergy = null;
           DDSession.write(session);
         }
         return session.combat;
@@ -559,9 +714,17 @@
           return;
         }
         DDSession.write(session);
+        motion.strikes = res.strikes || [];
+        motion.fainted = res.fainted || [];
+        motion.pulseWhose = true;
+        motion.pulseEnergy = true;
         if (res.effect) DDEffects.play(res.effect, DDEffects.kindLabel(res.effect));
         if (res.outcome) {
-          finishCombat(room);
+          // Still show hit motion briefly before result chrome
+          render();
+          window.setTimeout(function () {
+            finishCombat(room);
+          }, 380);
           return;
         }
         render();
@@ -595,7 +758,6 @@
 
       render();
     })();
-  </script>
   </script>
 
   <footer class="site-footer">
