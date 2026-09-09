@@ -1,0 +1,11 @@
+{
+  "id": "stub-moonlit-attic",
+  "title": "The Moonlit Attic (Host Pack Stub)",
+  "locked": true,
+  "tagline": "A second adventure unlocked for demo hosts — rooms locked in this sample.",
+  "rooms": [
+    { "id": "attic-1", "title": "Dusty Skylight", "locked": true },
+    { "id": "attic-2", "title": "Trunk of Soft Thunder", "locked": true }
+  ],
+  "note": "Stub only — full rooms ship with Host unlock / paid saves (coming soon)."
+}

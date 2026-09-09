@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dungeon Dad — Play</title>
+  <link rel="stylesheet" href="css/site.css" />
+</head>
+<body>
+  <div id="fx-stage">
+    <div class="wrap">
+      <header class="topbar">
+        <img class="logo" src="assets/logo.png" alt="Dungeon Dad logo" />
+        <div class="brand">
+          <h1>Dungeon Dad</h1>
+          <p class="tag" id="adventure-title">Adventure</p>
+        </div>
+        <span id="unlock-badge" class="badge unlock" hidden>Unlocked (demo)</span>
+        <span class="code-pill" id="code-display" style="font-size:1rem;letter-spacing:0.12em">——</span>
+      </header>
+
+      <div id="solo-banner" class="solo-banner" hidden>Solo dry-run — labeled demo mode (host only)</div>
+
+      <div class="grid-2">
+        <section class="panel">
+          <h2 id="room-title">Room</h2>
+          <div class="scene">
+            <img id="room-image" src="assets/rooms/entrance.png" alt="Room scene" />
+            <div class="caption" id="room-caption">Scene</div>
+          </div>
+          <p class="narration" id="room-narration"></p>
+
+          <div id="lobby-controls">
+            <p class="muted">Waiting in lobby. Host starts the run when ready (works with host + joined players, or continue as labeled solo).</p>
+            <div class="row">
+              <button type="button" class="btn gold" id="btn-start" hidden>Start dungeon run</button>
+              <a class="btn ghost" href="index.html">Back</a>
+            </div>
+          </div>
+
+          <div id="play-controls" hidden>
+            <h3 id="action-prompt">Choose an action</h3>
+            <div class="actions" id="action-list"></div>
+            <div id="result-box" class="result-box" hidden></div>
+            <div class="row" style="margin-top:0.75rem">
+              <button type="button" class="btn" id="btn-continue" hidden>Continue</button>
+            </div>
+          </div>
+
+          <div id="ended-inline" hidden>
+            <p class="muted">Run complete — open the shareable recap.</p>
+            <div class="row">
+              <a class="btn gold" href="end.html">Open party recap</a>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel">
+          <h2>Party roster</h2>
+          <div class="roster" id="roster"></div>
+          <p class="hint" id="role-hint"></p>
+          <hr style="border:none;border-top:1px solid rgba(233,196,106,0.25);margin:1rem 0" />
+          <h3>Host unlock / paid saves — coming soon</h3>
+          <div id="stub-dungeon" class="stub-card" hidden>
+            <strong id="stub-title"></strong>
+            <p class="muted" id="stub-tagline" style="margin:0.35rem 0 0"></p>
+          </div>
+          <p class="hint" id="stub-locked-hint">Enter DUNGEON-DAD-HOST on the home page to reveal the stub pack.</p>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/session.js"></script>
+  <script src="js/party.js"></script>
+  <script src="js/dungeon.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    (async function () {
+      DDUI.ensureFooter();
+      const packs = await DDDungeon.loadPacks();
+      const active = DDSession.getActive();
+      if (!active || !active.code) {
+        location.href = 'index.html';
+        return;
+      }
+
+      let session = DDSession.read(active.code);
+      if (!session) {
+        DDUI.toast('Session missing — create or join again');
+        location.href = 'index.html';
+        return;
+      }
+
+      const isHost = active.role === 'host' || active.playerId === session.hostId;
+      DDUI.$('#code-display').textContent = session.code;
+      DDUI.$('#adventure-title').textContent = packs.starter.title;
+      DDUI.$('#role-hint').textContent = isHost
+        ? 'You are the host. Pace rooms with the Start / action buttons.'
+        : 'You are a player. Host paces rooms; your character is on the roster.';
+
+      function refreshUnlock() {
+        DDUI.updateUnlockBadge();
+        const unlocked = DDSession.isUnlocked();
+        DDUI.show(DDUI.$('#stub-locked-hint'), !unlocked);
+        if (unlocked && packs.stub) {
+          DDUI.$('#stub-title').textContent = packs.stub.title;
+          DDUI.$('#stub-tagline').textContent = packs.stub.tagline || '';
+        }
+      }
+      refreshUnlock();
+
+      function me() {
+        return (session.party || []).find(function (p) { return p.id === active.playerId; });
+      }
+
+      function renderRoster() {
+        DDParty.renderRoster(DDUI.$('#roster'), session.party, {
+          playerId: active.playerId,
+          hostId: session.hostId
+        });
+      }
+
+      let awaitingContinue = false;
+
+      function render() {
+        session = DDSession.read(active.code) || session;
+        if (session.pendingAdvance) awaitingContinue = true;
+        DDUI.show(DDUI.$('#solo-banner'), !!session.solo);
+        renderRoster();
+        refreshUnlock();
+
+        if (session.phase === 'ended' || DDDungeon.isComplete(session)) {
+          DDUI.show(DDUI.$('#lobby-controls'), false);
+          DDUI.show(DDUI.$('#play-controls'), false);
+          DDUI.show(DDUI.$('#ended-inline'), true);
+          const last = session.lastResult;
+          if (last) {
+            const room = (packs.starter.rooms || []).find(function (r) { return r.id === last.roomId; });
+            if (room) {
+              DDUI.$('#room-title').textContent = room.title;
+              DDUI.$('#room-image').src = room.image;
+              DDUI.$('#room-caption').textContent = room.title;
+              DDUI.$('#room-narration').textContent = last.text;
+            }
+          }
+          return;
+        }
+
+        if (session.phase === 'lobby') {
+          DDUI.show(DDUI.$('#lobby-controls'), true);
+          DDUI.show(DDUI.$('#play-controls'), false);
+          DDUI.show(DDUI.$('#ended-inline'), false);
+          DDUI.show(DDUI.$('#btn-start'), isHost);
+          const first = packs.starter.rooms[0];
+          DDUI.$('#room-title').textContent = 'Lobby — ' + packs.starter.title;
+          DDUI.$('#room-image').src = first.image;
+          DDUI.$('#room-caption').textContent = 'Ready when you are';
+          DDUI.$('#room-narration').textContent =
+            'Party of ' + (session.party || []).length + '. Share code ' + session.code + ' so friends can join.';
+          return;
+        }
+
+        // playing
+        DDUI.show(DDUI.$('#lobby-controls'), false);
+        DDUI.show(DDUI.$('#ended-inline'), false);
+        DDUI.show(DDUI.$('#play-controls'), true);
+
+        const room = DDDungeon.currentRoom(session);
+        if (!room) {
+          session.phase = 'ended';
+          DDSession.write(session);
+          location.href = 'end.html';
+          return;
+        }
+
+        DDUI.$('#room-title').textContent = 'Room ' + ((session.roomIndex || 0) + 1) + ' — ' + room.title;
+        DDUI.$('#room-image').src = room.image;
+        DDUI.$('#room-caption').textContent = room.title;
+        DDUI.$('#room-narration').textContent = room.narration;
+        DDUI.$('#action-prompt').textContent = room.action.prompt;
+
+        const list = DDUI.$('#action-list');
+        const resultBox = DDUI.$('#result-box');
+        const btnContinue = DDUI.$('#btn-continue');
+
+        if (awaitingContinue && session.lastResult) {
+          list.innerHTML = '';
+          DDUI.show(resultBox, true);
+          resultBox.className = 'result-box' + (session.lastResult.passed ? '' : ' fail');
+          let rollBit = '';
+          if (session.lastResult.roll) {
+            const dc = session.lastResult.checkDc != null ? session.lastResult.checkDc : '?';
+            rollBit = ' (roll ' + session.lastResult.roll.total + ' vs DC ' + dc + ')';
+          }
+          const ff = session.lastResult.failForward ? ' Fail-forward — the story still advances.' : '';
+          resultBox.textContent = session.lastResult.actorName + ': ' + session.lastResult.text + rollBit + ff;
+          DDUI.show(btnContinue, isHost);
+        } else {
+          DDUI.show(resultBox, false);
+          DDUI.show(btnContinue, false);
+          list.innerHTML = '';
+          const canAct = isHost || !!me();
+          (room.action.options || []).forEach(function (opt) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn action-btn';
+            btn.textContent = opt.label;
+            btn.disabled = !canAct || !isHost; // host paces actions in sample
+            if (!isHost) {
+              btn.title = 'Host chooses the party action in this sample';
+            }
+            btn.addEventListener('click', function () {
+              if (!isHost) return;
+              const actor = me() || (session.party && session.party[0]);
+              const result = DDDungeon.resolveAction(session, opt.id, actor);
+              DDSession.write(session);
+              DDEffects.play(result.effect, DDEffects.kindLabel(result.effect));
+              awaitingContinue = true;
+              // If ended, still show result then continue goes to end
+              render();
+            });
+            list.appendChild(btn);
+          });
+          if (!isHost) {
+            const note = document.createElement('p');
+            note.className = 'hint';
+            note.textContent = 'Watch the roster and wait for the host to pick an action.';
+            list.appendChild(note);
+          }
+        }
+      }
+
+      DDUI.$('#btn-start').addEventListener('click', function () {
+        if (!isHost) return;
+        // AC: host+≥1 joined player, OR explicitly labeled solo dry-run
+        if ((session.party || []).length < 2 && !session.solo) {
+          session.solo = true;
+          DDUI.toast('Solo dry-run — labeled (no joined player yet)');
+        }
+        DDDungeon.startRun(session);
+        DDSession.write(session);
+        awaitingContinue = false;
+        render();
+      });
+
+      DDUI.$('#btn-continue').addEventListener('click', function () {
+        if (!isHost) return;
+        session = DDSession.read(active.code) || session;
+        DDDungeon.advanceAfterResult(session);
+        DDSession.write(session);
+        awaitingContinue = false;
+        if (session.phase === 'ended' || DDDungeon.isComplete(session)) {
+          location.href = 'end.html';
+          return;
+        }
+        render();
+      });
+
+      DDSession.onUpdate(function (msg) {
+        if (msg && msg.code && msg.code !== active.code) return;
+        if (msg && msg.type === 'unlock') { refreshUnlock(); return; }
+        const fresh = DDSession.read(active.code);
+        if (!fresh) return;
+        // Sync awaitingContinue if room advanced elsewhere
+        if (fresh.pendingAdvance && (!session.lastResult || fresh.lastResult.at !== session.lastResult.at)) {
+          awaitingContinue = true;
+          if (fresh.lastEffect) DDEffects.play(fresh.lastEffect, DDEffects.kindLabel(fresh.lastEffect));
+        }
+        if (!fresh.pendingAdvance) awaitingContinue = false;
+        session = fresh;
+        render();
+      });
+
+      render();
+    })();
+  </script>
+
+  <footer class="site-footer">
+    <span>Dungeon Dad</span>
+    <span aria-hidden="true">·</span>
+    <span>Dungeon Dad Productions</span>
+  </footer>
+
+</body>
+</html>

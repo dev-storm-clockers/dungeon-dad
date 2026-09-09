@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dungeon Dad — Session</title>
+  <link rel="stylesheet" href="css/site.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <img class="logo" src="assets/logo.png" alt="Dungeon Dad logo" />
+      <div class="brand">
+        <h1>Dungeon Dad</h1>
+        <p class="tag">GM-light cellar adventures for the whole table</p>
+      </div>
+      <span id="unlock-badge" class="badge unlock" hidden>Unlocked (demo)</span>
+    </header>
+
+    <section class="panel">
+      <h2>Free starter</h2>
+      <p class="muted" id="starter-blurb">Loading adventure…</p>
+      <div class="pill-row" style="margin-top:0.5rem">
+        <span class="badge">All ages</span>
+        <span class="badge">5 rooms</span>
+        <span class="badge">Fail-forward</span>
+      </div>
+    </section>
+
+    <div class="grid-2">
+      <section class="panel" id="host-panel">
+        <h2>Host a session</h2>
+        <p class="muted">Create a shareable code. Open a second tab to join as a player.</p>
+        <div class="row">
+          <button type="button" class="btn gold" id="btn-create">Create session</button>
+          <button type="button" class="btn ghost" id="btn-solo">Solo dry-run</button>
+        </div>
+        <div id="host-created" hidden style="margin-top:1rem">
+          <label>Share this code</label>
+          <div class="row">
+            <span class="code-pill" id="session-code">------</span>
+            <button type="button" class="btn" id="btn-copy-code">Copy code</button>
+          </div>
+          <p class="hint">Players join with this code on another tab or device (same browser profile for this sample).</p>
+          <div class="row">
+            <button type="button" class="btn gold" id="btn-enter-lobby">Enter lobby / play</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="join-panel">
+        <h2>Join a session</h2>
+        <label for="join-code">Session code</label>
+        <input type="text" id="join-code" maxlength="8" placeholder="e.g. AB12CD" autocomplete="off" />
+
+        <label for="char-name">Character name</label>
+        <input type="text" id="char-name" maxlength="20" placeholder="Name" />
+
+        <label for="char-look">Look</label>
+        <select id="char-look"></select>
+
+        <label>Stats (1–4 each)</label>
+        <div class="stats-row">
+          <div>
+            <label for="stat-grit">Grit</label>
+            <input type="number" id="stat-grit" min="1" max="4" value="2" />
+          </div>
+          <div>
+            <label for="stat-wit">Wit</label>
+            <input type="number" id="stat-wit" min="1" max="4" value="2" />
+          </div>
+          <div>
+            <label for="stat-care">Care</label>
+            <input type="number" id="stat-care" min="1" max="4" value="2" />
+          </div>
+          <div>
+            <label for="stat-spark">Spark</label>
+            <input type="number" id="stat-spark" min="1" max="4" value="2" />
+          </div>
+        </div>
+
+        <div class="row">
+          <button type="button" class="btn gold" id="btn-join">Join party</button>
+        </div>
+        <p id="join-error" class="hint" style="color:#e76f51" hidden></p>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>Host unlock / paid saves — coming soon</h2>
+      <p class="muted">Enter the demo host code to preview unlock. No payments in this sample.</p>
+      <label for="unlock-code">Unlock code</label>
+      <div class="row">
+        <input type="text" id="unlock-code" placeholder="DUNGEON-DAD-HOST" style="flex:1;min-width:12rem" />
+        <button type="button" class="btn" id="btn-unlock">Unlock</button>
+      </div>
+      <div id="stub-dungeon" class="stub-card" hidden style="margin-top:0.85rem">
+        <h3 id="stub-title">Stub dungeon</h3>
+        <p class="muted" id="stub-tagline"></p>
+        <p class="locked">Rooms locked in this sample</p>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/session.js"></script>
+  <script src="js/party.js"></script>
+  <script src="js/dungeon.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    (async function () {
+      DDUI.ensureFooter();
+      DDParty.fillLookSelect(DDUI.$('#char-look'));
+
+      const packs = await DDDungeon.loadPacks();
+      const starter = packs.starter;
+      DDUI.$('#starter-blurb').textContent =
+        starter.title + ' — ' + starter.tagline;
+
+      function refreshUnlockUI() {
+        DDUI.updateUnlockBadge();
+        const stub = packs.stub;
+        if (stub) {
+          DDUI.$('#stub-title').textContent = stub.title;
+          DDUI.$('#stub-tagline').textContent = stub.tagline || '';
+        }
+      }
+      refreshUnlockUI();
+      DDSession.onUpdate(function () { refreshUnlockUI(); });
+
+      let createdCode = null;
+
+      DDUI.$('#btn-create').addEventListener('click', function () {
+        const session = DDSession.createSession({ solo: false });
+        // Host also appears on roster with a default character
+        const hostChar = DDParty.createCharacter({
+          name: 'Host',
+          lookIndex: 0,
+          stats: { grit: 3, wit: 2, care: 3, spark: 2 }
+        });
+        session.party.push({
+          id: session.hostId,
+          name: hostChar.name,
+          look: hostChar.look,
+          stats: hostChar.stats,
+          joinedAt: Date.now(),
+          isHost: true
+        });
+        DDSession.write(session);
+        createdCode = session.code;
+        DDUI.$('#session-code').textContent = session.code;
+        DDUI.show(DDUI.$('#host-created'), true);
+        DDUI.toast('Session created — share the code');
+      });
+
+      DDUI.$('#btn-solo').addEventListener('click', function () {
+        const session = DDSession.createSession({ solo: true });
+        const hostChar = DDParty.createCharacter({
+          name: 'Solo Hero',
+          lookIndex: 1,
+          stats: { grit: 3, wit: 3, care: 2, spark: 2 }
+        });
+        session.party.push({
+          id: session.hostId,
+          name: hostChar.name,
+          look: hostChar.look,
+          stats: hostChar.stats,
+          joinedAt: Date.now(),
+          isHost: true
+        });
+        DDDungeon.startRun(session);
+        DDSession.write(session);
+        location.href = 'play.html';
+      });
+
+      DDUI.$('#btn-copy-code').addEventListener('click', async function () {
+        const code = DDUI.$('#session-code').textContent.trim();
+        const ok = await DDUI.copyText(code);
+        DDUI.toast(ok ? 'Code copied' : 'Copy failed — select the code manually');
+      });
+
+      DDUI.$('#btn-enter-lobby').addEventListener('click', function () {
+        if (!createdCode) return;
+        location.href = 'play.html';
+      });
+
+      DDUI.$('#btn-join').addEventListener('click', function () {
+        const err = DDUI.$('#join-error');
+        DDUI.show(err, false);
+        const code = DDUI.$('#join-code').value;
+        const character = DDParty.createCharacter({
+          name: DDUI.$('#char-name').value,
+          lookIndex: parseInt(DDUI.$('#char-look').value, 10) || 0,
+          stats: {
+            grit: DDUI.$('#stat-grit').value,
+            wit: DDUI.$('#stat-wit').value,
+            care: DDUI.$('#stat-care').value,
+            spark: DDUI.$('#stat-spark').value
+          }
+        });
+        const res = DDSession.joinSession(code, character);
+        if (!res.ok) {
+          err.textContent = res.error || 'Could not join';
+          DDUI.show(err, true);
+          return;
+        }
+        location.href = 'play.html';
+      });
+
+      DDUI.$('#btn-unlock').addEventListener('click', function () {
+        const code = DDUI.$('#unlock-code').value;
+        if (DDSession.tryUnlock(code)) {
+          refreshUnlockUI();
+          DDUI.toast('Host unlock demo — Unlocked (demo)');
+        } else {
+          DDUI.toast('Not a valid unlock code');
+        }
+      });
+    })();
+  </script>
+
+  <footer class="site-footer">
+    <span>Dungeon Dad</span>
+    <span aria-hidden="true">·</span>
+    <span>Dungeon Dad Productions</span>
+  </footer>
+
+</body>
+</html>
