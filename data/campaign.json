@@ -1,0 +1,79 @@
+{
+  "id": "below-maple-street",
+  "title": "Below Maple Street",
+  "tagline": "A quiet town. Under one ordinary house: service tunnels, sealed wards, and things that learned the floor plan.",
+  "chapters": [
+    {
+      "n": 1,
+      "id": "the-hatch",
+      "title": "The Hatch",
+      "boss": "The Concierge",
+      "hook": "Find the way down. The door charges a toll in HP.",
+      "locked": false,
+      "playable": true
+    },
+    {
+      "n": 2,
+      "id": "meter-room",
+      "title": "Meter Room",
+      "boss": "Brownout",
+      "hook": "Light and power — and whatever feeds on both.",
+      "locked": true,
+      "playable": false
+    },
+    {
+      "n": 3,
+      "id": "lost-laundry",
+      "title": "Lost Laundry",
+      "boss": "The Cycle",
+      "hook": "Wrong memories tumbling on spin.",
+      "locked": true,
+      "playable": false
+    },
+    {
+      "n": 4,
+      "id": "union-stack",
+      "title": "Union Stack",
+      "boss": "Shop Steward",
+      "hook": "Old labor wards still clock in.",
+      "locked": true,
+      "playable": false
+    },
+    {
+      "n": 5,
+      "id": "flood-gate",
+      "title": "Flood Gate",
+      "boss": "Surge",
+      "hook": "Rising water. Timing is the fight.",
+      "locked": true,
+      "playable": false
+    },
+    {
+      "n": 6,
+      "id": "archive",
+      "title": "Archive",
+      "boss": "Indexer",
+      "hook": "Names on the walls. Cross-reference carefully.",
+      "locked": true,
+      "playable": false
+    },
+    {
+      "n": 7,
+      "id": "boiler-choir",
+      "title": "Boiler Choir",
+      "boss": "Pressure",
+      "hook": "Heat and noise in four-part harmony.",
+      "locked": true,
+      "playable": false
+    },
+    {
+      "n": 8,
+      "id": "street-level",
+      "title": "Street Level",
+      "boss": "Maple Itself",
+      "hook": "Climb out changed.",
+      "locked": true,
+      "playable": false
+    }
+  ]
+}

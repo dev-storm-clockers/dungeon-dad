@@ -1,22 +1,26 @@
 /**
- * Dungeon Dad — load packs, advance rooms, fail-forward
+ * Dungeon Dad — load packs, advance rooms, fail-forward, campaign, stash
  */
 (function (global) {
   let starter = null;
   let stub = null;
+  let campaign = null;
 
   async function loadPacks() {
-    const [a, b] = await Promise.all([
+    const [a, b, c] = await Promise.all([
       fetch('data/starter.json').then(function (r) { return r.json(); }),
-      fetch('data/stub-pack.json').then(function (r) { return r.json(); })
+      fetch('data/stub-pack.json').then(function (r) { return r.json(); }),
+      fetch('data/campaign.json').then(function (r) { return r.json(); }).catch(function () { return null; })
     ]);
     starter = a;
     stub = b;
-    return { starter: starter, stub: stub };
+    campaign = c;
+    return { starter: starter, stub: stub, campaign: campaign };
   }
 
   function getStarter() { return starter; }
   function getStub() { return stub; }
+  function getCampaign() { return campaign; }
 
   function currentRoom(session) {
     if (!starter || !session) return null;
@@ -31,10 +35,6 @@
     return (session.roomIndex || 0) >= (starter.rooms || []).length;
   }
 
-  /**
-   * Resolve a room action. Fail-forward: failed checks still mark pendingAdvance.
-   * Room index advances on advanceAfterResult() so the result UI can show the same room.
-   */
   function resolveAction(session, optionId, actor) {
     const room = currentRoom(session);
     if (!room || !room.action) return null;
@@ -51,8 +51,8 @@
     }
 
     const text = passed
-      ? (option.successText || 'It works!')
-      : (option.failText || 'It fumbles — but the story still moves on.');
+      ? (option.successText || 'It works.')
+      : (option.failText || 'It fails — you still move on.');
 
     const result = {
       roomId: room.id,
@@ -73,18 +73,59 @@
     session.log.push(result);
     session.lastResult = result;
     session.lastEffect = result.effect;
-    session.pendingAdvance = true; // always advance on continue (fail-forward)
+    session.pendingAdvance = true;
     session.phase = 'playing';
 
     return result;
   }
 
+  function ensureStash(session) {
+    if (!session.stash) session.stash = [];
+    return session.stash;
+  }
+
+  function grantClearLoot(session) {
+    if (!starter || !starter.lootOnClear) return null;
+    const loot = starter.lootOnClear;
+    const stash = ensureStash(session);
+    if (stash.some(function (i) { return i.id === loot.id; })) return loot;
+    stash.push({
+      id: loot.id,
+      name: loot.name,
+      emoji: loot.emoji || '🔑',
+      blurb: loot.blurb || '',
+      fromChapter: starter.chapter || 1,
+      at: Date.now()
+    });
+    session.chapterCleared = true;
+    return loot;
+  }
+
+  /**
+   * After Concierge (or last combat) result is locked: grant Spare Key on win.
+   */
+  function maybeGrantLootFromLastResult(session) {
+    const last = session && session.lastResult;
+    if (!last || !last.passed) return null;
+    const summary = last.combatSummary || {};
+    if (summary.enemyId === 'concierge' || last.roomId === 'concierge') {
+      return grantClearLoot(session);
+    }
+    return null;
+  }
+
   function advanceAfterResult(session) {
     if (!session || !session.pendingAdvance) return session;
+    maybeGrantLootFromLastResult(session);
     session.pendingAdvance = false;
     session.roomIndex = (session.roomIndex || 0) + 1;
     if (isComplete(session)) {
       session.phase = 'ended';
+      // Boss wipe still ends chapter; loot only if clear already granted
+      const last = session.lastResult;
+      if (last && last.passed && (last.roomId === 'concierge' || (last.combatSummary && last.combatSummary.enemyId === 'concierge'))) {
+        grantClearLoot(session);
+      }
     }
     return session;
   }
@@ -97,16 +138,23 @@
     session.lastEffect = null;
     session.pendingAdvance = false;
     session.combat = null;
+    session.chapterCleared = false;
+    // Keep stash across retries in same session code? Fresh run clears pending loot flags only.
+    if (!session.stash) session.stash = [];
     return session;
   }
 
   function buildRecap(session) {
     const pack = starter || { title: 'Dungeon', ending: {}, rooms: [] };
     const party = session.party || [];
+    const wiped = session.lastResult && session.lastResult.failForward &&
+      (session.lastResult.roomId === 'concierge' ||
+        (session.lastResult.combatSummary && session.lastResult.combatSummary.outcome === 'lose'));
+    const ending = wiped && pack.wipeEnding ? pack.wipeEnding : (pack.ending || {});
     const lines = [];
     lines.push('Dungeon Dad — Party Recap');
     lines.push('Session: ' + (session.code || '?'));
-    lines.push('Adventure: ' + pack.title);
+    lines.push('Adventure: ' + pack.title + ' (Below Maple Street)');
     lines.push('');
     lines.push('Party:');
     if (!party.length) {
@@ -117,6 +165,7 @@
         const stats = p.stats || {};
         lines.push(
           '  ' + (look.emoji || '') + ' ' + p.name +
+          (p.lean ? ' [' + p.lean + ']' : '') +
           ' — Grit ' + (stats.grit || '?') +
           ', Wit ' + (stats.wit || '?') +
           ', Care ' + (stats.care || '?') +
@@ -127,13 +176,23 @@
     lines.push('');
     lines.push('Beats:');
     (session.log || []).forEach(function (r, i) {
-      const mark = r.passed ? '✓' : '→ fail-forward';
+      const mark = r.passed ? '✓' : (r.optionId && String(r.optionId).indexOf('lose') >= 0 ? '✗ wipe' : '→ fail-forward');
       lines.push('  ' + (i + 1) + '. ' + r.roomTitle + ' — ' + r.optionLabel + ' [' + r.effect + '] ' + mark);
       lines.push('     ' + r.text);
     });
     lines.push('');
-    lines.push((pack.ending && pack.ending.title) || 'The End');
-    lines.push((pack.ending && pack.ending.blurb) || '');
+    const stash = session.stash || [];
+    lines.push('Party stash:');
+    if (!stash.length) {
+      lines.push('  (empty)');
+    } else {
+      stash.forEach(function (item) {
+        lines.push('  ' + (item.emoji || '') + ' ' + item.name + (item.blurb ? ' — ' + item.blurb : ''));
+      });
+    }
+    lines.push('');
+    lines.push(ending.title || 'The End');
+    lines.push(ending.blurb || '');
     lines.push('');
     lines.push('— Dungeon Dad Productions');
     return lines.join('\n');
@@ -143,11 +202,15 @@
     loadPacks: loadPacks,
     getStarter: getStarter,
     getStub: getStub,
+    getCampaign: getCampaign,
     currentRoom: currentRoom,
     isComplete: isComplete,
     resolveAction: resolveAction,
     advanceAfterResult: advanceAfterResult,
     startRun: startRun,
-    buildRecap: buildRecap
+    buildRecap: buildRecap,
+    grantClearLoot: grantClearLoot,
+    maybeGrantLootFromLastResult: maybeGrantLootFromLastResult,
+    ensureStash: ensureStash
   };
 })(window);

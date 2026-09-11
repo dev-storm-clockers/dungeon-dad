@@ -88,10 +88,12 @@
       updatedAt: Date.now(),
       hostId: opts.hostId || ('host-' + Math.random().toString(36).slice(2, 9)),
       solo: !!opts.solo,
-      dungeonId: opts.dungeonId || 'starter-cellar-of-kindness',
+      dungeonId: opts.dungeonId || 'chapter1-the-hatch',
       roomIndex: 0,
       phase: 'lobby', // lobby | playing | ended
       party: [],
+      stash: [],
+      chapterCleared: false,
       log: [],
       lastEffect: null,
       lastResult: null
@@ -110,9 +112,14 @@
     const playerId = 'p-' + Math.random().toString(36).slice(2, 9);
     const member = {
       id: playerId,
+      heroId: (playerStub && playerStub.heroId) || null,
       name: (playerStub && playerStub.name) || 'Adventurer',
-      look: (playerStub && playerStub.look) || { emoji: '🛡️', color: '#2a9d8f' },
+      look: (playerStub && playerStub.look) || { emoji: '🔦', color: '#e9c46a' },
       stats: (playerStub && playerStub.stats) || { grit: 2, wit: 2, care: 2, spark: 2 },
+      lean: (playerStub && playerStub.lean) || null,
+      feel: (playerStub && playerStub.feel) || null,
+      passive: (playerStub && playerStub.passive) || null,
+      blurb: (playerStub && playerStub.blurb) || null,
       joinedAt: Date.now()
     };
     session.party = session.party || [];

@@ -20,12 +20,17 @@
     <div id="solo-banner" class="solo-banner" hidden>Solo dry-run — labeled demo mode</div>
 
     <section class="panel">
-      <h2 id="end-title">Back to the Tavern</h2>
+      <h2 id="end-title">Under Maple Street</h2>
       <p id="end-blurb" class="muted"></p>
       <div class="scene" style="margin-top:0.75rem">
         <img id="end-image" src="assets/rooms/boss.png" alt="Run complete" />
         <div class="caption">Run complete</div>
       </div>
+    </section>
+
+    <section class="panel">
+      <h2>Party stash</h2>
+      <div id="party-stash" class="party-stash"></div>
     </section>
 
     <section class="panel">
@@ -67,10 +72,15 @@
       }
 
       DDUI.show(DDUI.$('#solo-banner'), !!session.solo);
-      if (starter.ending) {
-        DDUI.$('#end-title').textContent = starter.ending.title || 'The End';
-        DDUI.$('#end-blurb').textContent = starter.ending.blurb || '';
-      }
+
+      const wiped = session.lastResult && session.lastResult.failForward &&
+        (session.lastResult.roomId === 'concierge' ||
+          (session.lastResult.combatSummary && session.lastResult.combatSummary.outcome === 'lose' &&
+            session.lastResult.combatSummary.enemyId === 'concierge'));
+      const ending = wiped && starter.wipeEnding ? starter.wipeEnding : (starter.ending || {});
+      DDUI.$('#end-title').textContent = ending.title || 'The End';
+      DDUI.$('#end-blurb').textContent = ending.blurb || '';
+
       const rooms = starter.rooms || [];
       if (rooms.length) {
         DDUI.$('#end-image').src = rooms[rooms.length - 1].image;
@@ -80,13 +90,14 @@
         playerId: active.playerId,
         hostId: session.hostId
       });
+      DDParty.renderStash(DDUI.$('#party-stash'), session.stash || []);
 
       const recap = DDDungeon.buildRecap(session);
       DDUI.$('#recap-text').textContent = recap;
 
       DDUI.$('#btn-copy').addEventListener('click', async function () {
         const ok = await DDUI.copyText(recap);
-        DDUI.toast(ok ? 'Recap copied — share it anywhere' : 'Copy failed — select the text manually');
+        DDUI.toast(ok ? 'Recap copied' : 'Copy failed — select the text manually');
       });
     })();
   </script>

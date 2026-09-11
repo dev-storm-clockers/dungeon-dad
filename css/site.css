@@ -996,3 +996,133 @@ html, body {
     flex: 0 0 7rem !important;
   }
 }
+
+/* —— Pass 4: campaign map, heroes, intent, stash —— */
+.campaign-map {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.campaign-chapter {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(233, 196, 106, 0.28);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.campaign-chapter.playable {
+  border-color: rgba(42, 157, 143, 0.65);
+  box-shadow: inset 0 0 0 1px rgba(42, 157, 143, 0.25);
+}
+
+.campaign-chapter.locked {
+  opacity: 0.72;
+}
+
+.campaign-n {
+  font-weight: 800;
+  color: var(--gold);
+  min-width: 2.6rem;
+}
+
+.campaign-title {
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+.campaign-boss {
+  font-size: 0.9rem;
+  color: var(--gold-bright);
+}
+
+.campaign-hook {
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.badge.locked-badge {
+  background: #445;
+  color: #ccd;
+  font-weight: 600;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin: 0.35rem 0 0.25rem;
+}
+
+@media (max-width: 520px) {
+  .hero-grid { grid-template-columns: 1fr; }
+}
+
+.hero-pick {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 2px solid rgba(233, 196, 106, 0.35);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--paper);
+  cursor: pointer;
+  border-left: 4px solid var(--look, var(--gold));
+}
+
+.hero-pick.selected,
+.hero-pick:focus-visible {
+  border-color: var(--gold-bright);
+  background: rgba(20, 80, 84, 0.55);
+  box-shadow: 0 0 0 2px rgba(233, 196, 106, 0.35);
+}
+
+.hero-pick-emoji { font-size: 1.35rem; line-height: 1; }
+.hero-pick-name { font-weight: 800; color: var(--gold-bright); }
+.hero-pick-lean { font-size: 0.8rem; color: var(--ok); font-weight: 700; }
+.hero-pick-blurb { font-size: 0.78rem; color: var(--muted); }
+
+.roster-lean {
+  font-size: 0.75rem;
+  color: var(--ok);
+  font-weight: 650;
+  margin: 0.1rem 0;
+}
+
+.party-stash { min-height: 1.5rem; }
+.stash-list { list-style: none; margin: 0; padding: 0; }
+.stash-item {
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(233, 196, 106, 0.12);
+  border: 1px solid rgba(233, 196, 106, 0.4);
+  margin-bottom: 0.35rem;
+}
+.stash-emoji { margin-right: 0.25rem; }
+.stash-empty { margin: 0; }
+
+.combat-intent {
+  margin: 0.45rem 0 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  border: 1px dashed rgba(233, 196, 106, 0.55);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--gold-bright);
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.combat-intent.toll {
+  border-style: solid;
+  border-color: var(--danger);
+  background: rgba(231, 111, 81, 0.15);
+  color: #ffd7cc;
+}

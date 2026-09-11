@@ -1,151 +1,162 @@
 {
-  "id": "starter-cellar-of-kindness",
-  "title": "The Cellar of Kindness",
-  "tagline": "A cozy all-ages run under Dad's favorite tavern.",
+  "id": "chapter1-the-hatch",
+  "title": "The Hatch",
+  "chapter": 1,
+  "campaignId": "below-maple-street",
+  "tagline": "Find the way under Maple Street. The door downstairs charges rent in blood.",
   "soloLabel": "Solo dry-run",
+  "lootOnClear": {
+    "id": "spare-key",
+    "name": "Spare Key",
+    "emoji": "🔑",
+    "blurb": "Cuts the Meter Room lock. Party stash."
+  },
   "rooms": [
     {
-      "id": "entrance",
-      "title": "The Creaky Hatch",
+      "id": "porch-light",
+      "title": "Porch Light",
       "image": "assets/rooms/entrance.png",
-      "narration": "A wooden hatch leads down into a warm cellar that smells like cinnamon and old stories. Cobwebs sparkle like fairy lights. Your party gathers at the top of the stairs.",
+      "narration": "One porch bulb buzzes over a hatch that shouldn't be there. Paint peels. The lock is older than the house.",
       "action": {
         "type": "choice",
-        "prompt": "How do you enter?",
+        "prompt": "How do you open it?",
         "options": [
           {
-            "id": "brave",
-            "label": "March in bravely (banter)",
-            "effect": "banter",
-            "check": null,
-            "successText": "You stamp down the stairs together, trading jokes. The hatch thumps shut behind you\u2014friendly, somehow.",
-            "failText": null
-          },
-          {
-            "id": "sneak",
-            "label": "Tip-toe carefully (check: Care)",
+            "id": "force",
+            "label": "Force the hatch",
             "effect": "hit",
-            "check": {
-              "stat": "care",
-              "dc": 3
-            },
-            "successText": "Soft steps. No squeaks. The cellar welcomes you like a secret clubhouse.",
-            "failText": "A step squeaks loudly\u2014everyone freezes, then laughs. You still make it down. Fail-forward!"
-          }
-        ]
-      }
-    },
-    {
-      "id": "treasure",
-      "title": "The Glow-Chest Nook",
-      "image": "assets/rooms/treasure.png",
-      "narration": "A small chest sits on a barrel, glowing gold. A note reads: 'For brave friends\u2014share what you find.'",
-      "action": {
-        "type": "choice",
-        "prompt": "What do you do with the chest?",
-        "options": [
-          {
-            "id": "open",
-            "label": "Open it together (loot)",
-            "effect": "loot",
             "check": null,
-            "successText": "Inside: sticky toffee coins and a map scrap. Everyone gets a shiny souvenir.",
+            "successText": "The frame splinters. You drop into damp concrete and the smell of old wiring.",
             "failText": null
           },
           {
-            "id": "study",
-            "label": "Study the rune lock (check: Wit)",
+            "id": "talk",
+            "label": "Talk it open",
+            "effect": "banter",
+            "check": null,
+            "successText": "You argue with a door. It sighs and unlatches. Maple Street has rules.",
+            "failText": null
+          },
+          {
+            "id": "keyhole",
+            "label": "Check the keyhole",
             "effect": "loot",
-            "check": {
-              "stat": "wit",
-              "dc": 3
-            },
-            "successText": "The rune clicks open. Bonus: a tiny brass dad-joke whistle.",
-            "failText": "The lock shrugs and pops open anyway. You get the toffee coins\u2014plus a mild sticky-finger curse that wears off in one room."
+            "check": null,
+            "successText": "No key here — only a scratched mark: TOLL AHEAD. You still get through.",
+            "failText": null
           }
         ]
       }
     },
     {
-      "id": "trap",
-      "title": "The Tickle-Tile Hall",
+      "id": "first-ladder",
+      "title": "First Ladder",
       "image": "assets/rooms/trap.png",
-      "narration": "The floor tiles look suspicious. One is painted with a smiling boot. Dad's voice echoes from upstairs: 'Watch your step!'",
+      "narration": "Rungs slick with runoff. A wire runs taut across the third step — trap telegraph, not subtle.",
       "action": {
         "type": "choice",
-        "prompt": "How do you cross?",
+        "prompt": "How do you take the ladder?",
         "options": [
           {
-            "id": "hop",
-            "label": "Hop the safe tiles (check: Grit)",
+            "id": "keen-eye",
+            "label": "Read the wire (check: Wit — Keen)",
             "effect": "trap",
-            "check": {
-              "stat": "grit",
-              "dc": 3
-            },
-            "successText": "Perfect hops. The tickle trap stays asleep. You high-five mid-air.",
-            "failText": "A tile giggles and sprays harmless glitter foam. You're damp, sparkling, and still across the hall."
+            "check": { "stat": "wit", "dc": 3 },
+            "successText": "You snip the trip. Trap dead. Keen would nod.",
+            "failText": "Wire bites your shin — shallow cut. You keep climbing. Fail-forward."
           },
           {
-            "id": "pole",
-            "label": "Prod with a broom pole (trap)",
+            "id": "torch-lead",
+            "label": "Torch goes first (block the snap)",
+            "effect": "hit",
+            "check": null,
+            "successText": "The wire snaps on a shield edge. Noise, no blood. Down you go.",
+            "failText": null
+          },
+          {
+            "id": "rush",
+            "label": "Rush the rungs",
+            "effect": "trap",
+            "check": { "stat": "grit", "dc": 4 },
+            "successText": "Fast feet. The trap fires late into empty air.",
+            "failText": "Trap tags a calf. You land hard, still on the map."
+          }
+        ]
+      }
+    },
+    {
+      "id": "toll-booth",
+      "title": "Toll Booth",
+      "image": "assets/rooms/treasure.png",
+      "narration": "A window in the wall. No attendant. A plaque: ENERGY OR FLESH. The Concierge keeps books.",
+      "action": {
+        "type": "choice",
+        "prompt": "Set the house rule:",
+        "options": [
+          {
+            "id": "pay-energy",
+            "label": "Agree: leave Energy for the toll",
+            "effect": "banter",
+            "check": null,
+            "successText": "Rule locked. Down here, unpaid tolls come out of hit points.",
+            "failText": null
+          },
+          {
+            "id": "argue",
+            "label": "Argue the rate",
+            "effect": "hit",
+            "check": { "stat": "spark", "dc": 3 },
+            "successText": "You shave a point off the debt. Concierge still collects.",
+            "failText": "It stamps REJECTED. Same toll. Same door."
+          },
+          {
+            "id": "ignore",
+            "label": "Walk past the plaque",
             "effect": "trap",
             "check": null,
-            "successText": "Foam sprays the broom, not you. Clever\u2014and very sticky. Onward!",
+            "successText": "Fine. You learned nothing it won't teach with teeth.",
             "failText": null
           }
         ]
       }
     },
     {
-      "id": "banter",
-      "title": "The Mirror of Mild Bragging",
-      "image": "assets/rooms/entrance.png",
-      "narration": "A tall mirror shows each of you looking slightly more heroic than usual. It asks for one kind brag about a teammate.",
-      "action": {
-        "type": "choice",
-        "prompt": "Offer a party banter beat:",
-        "options": [
-          {
-            "id": "cheer",
-            "label": "Cheer a teammate (banter)",
-            "effect": "banter",
-            "check": null,
-            "successText": "The mirror sparkles. Confidence +1 (flavor). The cellar feels brighter.",
-            "failText": null
-          },
-          {
-            "id": "riddle",
-            "label": "Answer the mirror's riddle (check: Wit)",
-            "effect": "banter",
-            "check": {
-              "stat": "wit",
-              "dc": 2
-            },
-            "successText": "You nail it: 'What has keys but opens no doors? A dad joke piano!' The mirror bows.",
-            "failText": "Wrong answer\u2014but the mirror laughs kindly and waves you on. Fail-forward with warm applause."
-          }
-        ]
-      }
-    },
-    {
-      "id": "boss",
-      "title": "The Grumpy Barrel King",
-      "image": "assets/rooms/boss.png",
-      "narration": "A big barrel with stick-on googly eyes blocks the stair back up. It growls: 'Nobody leaves without a hug... I mean, a card challenge!' Play allies from your party hand \u2014 spend Energy each turn.",
+      "id": "side-tunnel",
+      "title": "Side Tunnel",
+      "image": "assets/rooms/trap.png",
+      "narration": "Service spur. Something small scrapes metal on metal. Cards out — first real fight.",
       "action": {
         "type": "combat",
-        "prompt": "Card combat \u2014 play allies, then End turn to resolve hits"
+        "prompt": "Card combat — play allies, End turn to resolve"
       },
       "type": "combat",
       "combat": {
-        "enemyId": "barrel-king",
-        "prompt": "Card combat \u2014 play allies, then End turn to resolve hits"
+        "enemyId": "rattle-hatch",
+        "prompt": "Card combat — play allies, End turn to resolve"
+      }
+    },
+    {
+      "id": "concierge",
+      "title": "The Concierge",
+      "image": "assets/rooms/boss.png",
+      "narration": "A door with a ledger for a face. It reads your Energy. Unpaid tolls come due in HP.",
+      "action": {
+        "type": "combat",
+        "prompt": "Boss — watch the toll telegraph before you spend"
+      },
+      "type": "combat",
+      "combat": {
+        "enemyId": "concierge",
+        "prompt": "Boss — watch the toll telegraph before you spend"
       }
     }
   ],
   "ending": {
-    "title": "Back to the Tavern",
-    "blurb": "You climb into warm lantern light. Dad applauds. The cellar of kindness is cleared\u2014and the sticky toffee tastes like victory."
+    "title": "Under Maple Street",
+    "blurb": "The hatch is open. The house above pretends nothing happened. Your party has a stamp — and, if you cleared it, a Spare Key."
+  },
+  "wipeEnding": {
+    "title": "Wiped at the Door",
+    "blurb": "The Concierge closed the book. You climb out bruised. Recap the night. Try the Hatch again when you're ready."
   }
 }

@@ -31,7 +31,7 @@
           <p class="narration" id="room-narration"></p>
 
           <div id="lobby-controls">
-            <p class="muted">Waiting in lobby. Host starts the run when ready (works with host + joined players, or continue as labeled solo).</p>
+            <p class="muted">Lobby. Host starts when ready — joined players or labeled solo dry-run.</p>
             <div class="row">
               <button type="button" class="btn gold" id="btn-start" hidden>Start dungeon run</button>
               <a class="btn ghost" href="index.html">Back</a>
@@ -53,6 +53,7 @@
               <span class="combat-energy" id="combat-energy" title="Spendable Energy">Energy 0</span>
               <span class="combat-turnnum" id="combat-turnnum">Turn 1</span>
             </div>
+            <div class="combat-intent" id="combat-intent" hidden aria-live="polite"></div>
             <p class="hint" id="combat-hand-label">Party hand (shared)</p>
 
             <div class="combat-board">
@@ -78,7 +79,7 @@
 
             <div class="row combat-actions">
               <button type="button" class="btn gold" id="btn-end-turn">End turn (resolve hits)</button>
-              <button type="button" class="btn ghost" id="btn-concede" title="Fail-forward — never soft-locks">Yield (fail-forward)</button>
+              <button type="button" class="btn ghost" id="btn-concede" title="Wipe path — still reaches recap">Yield (wipe)</button>
             </div>
             <div id="combat-result-box" class="result-box" hidden></div>
             <div class="row" style="margin-top:0.75rem">
@@ -100,12 +101,16 @@
           <div class="roster" id="roster"></div>
           <p class="hint" id="role-hint"></p>
           <hr style="border:none;border-top:1px solid rgba(233,196,106,0.25);margin:1rem 0" />
-          <h3>Host unlock / paid saves — coming soon</h3>
+          <h3>Party stash</h3>
+          <div id="party-stash" class="party-stash"></div>
+          <hr style="border:none;border-top:1px solid rgba(233,196,106,0.25);margin:1rem 0" />
+          <h3>Campaign</h3>
+          <p class="hint" id="campaign-aside-hint">Ch.1 The Hatch — Concierge. Ch.2–8 locked stubs on the home map.</p>
           <div id="stub-dungeon" class="stub-card" hidden>
             <strong id="stub-title"></strong>
             <p class="muted" id="stub-tagline" style="margin:0.35rem 0 0"></p>
           </div>
-          <p class="hint" id="stub-locked-hint">Enter DUNGEON-DAD-HOST on the home page to reveal the stub pack.</p>
+          <p class="hint" id="stub-locked-hint">Home page unlock code reveals stub note.</p>
         </aside>
       </div>
     </div>
@@ -149,10 +154,19 @@
 
       function bossRoomIndex() {
         const rooms = packs.starter.rooms || [];
-        const idx = rooms.findIndex(function (r) {
-          return r.id === 'boss' || DDCombat.isCombatRoom(r);
-        });
+        let idx = rooms.findIndex(function (r) { return r.id === 'concierge' || r.id === 'boss'; });
+        if (idx < 0) {
+          idx = rooms.findIndex(function (r) { return DDCombat.isCombatRoom(r); });
+        }
+        // Prefer last combat room (Concierge) if multiple
+        const combatIdxs = [];
+        rooms.forEach(function (r, i) { if (DDCombat.isCombatRoom(r)) combatIdxs.push(i); });
+        if (combatIdxs.length) idx = combatIdxs[combatIdxs.length - 1];
         return idx >= 0 ? idx : 4;
+      }
+
+      function renderStash() {
+        DDParty.renderStash(DDUI.$('#party-stash'), session.stash || []);
       }
 
       function refreshUnlock() {
@@ -219,7 +233,7 @@
           (last && last.text ? last.text : 'Combat resolved.') + ff;
         DDUI.show(btnContinue, isHost);
 
-        DDUI.$('#combat-whose').textContent = last && last.passed ? 'Victory!' : 'Yielded (fail-forward)';
+        DDUI.$('#combat-whose').textContent = last && last.passed ? 'Victory' : 'Wipe';
         DDUI.$('#combat-energy').textContent = 'Energy —';
         DDUI.$('#combat-turnnum').textContent = last && last.combatSummary
           ? ('Turns ' + last.combatSummary.turns)
@@ -273,11 +287,23 @@
         enemyChip.className = 'combat-chip enemy-chip';
         enemyChip.setAttribute('data-chip', 'enemy');
         enemyChip.innerHTML =
-          '<span class="chip-emoji">' + (combat.enemyEmoji || '🛢️') + '</span>' +
+          '<span class="chip-emoji">' + (combat.enemyEmoji || '🚪') + '</span>' +
           '<span class="chip-name">' + combat.enemyName + '</span>' +
           '<span class="chip-hp">HP ' + combat.enemyHp + '/' + combat.enemyMaxHp + '</span>' +
           '<span class="chip-atk">ATK ' + (combat.enemyAtk || 1) + '</span>';
         enemyEl.appendChild(enemyChip);
+
+        const intentEl = DDUI.$('#combat-intent');
+        if (intentEl) {
+          if (combat.intent) {
+            intentEl.hidden = false;
+            intentEl.className = 'combat-intent' + (combat.pattern === 'energy-toll' ? ' toll' : '');
+            intentEl.textContent = 'Intent: ' + combat.intent;
+          } else {
+            intentEl.hidden = true;
+            intentEl.textContent = '';
+          }
+        }
 
         // Heroes
         const heroesEl = DDUI.$('#combat-heroes');
@@ -504,6 +530,10 @@
 
       function finishCombat(room) {
         const result = DDCombat.finalizeToRoomResult(session, room);
+        if (result && result.passed && room && (room.id === 'concierge' || (room.combat && room.combat.enemyId === 'concierge'))) {
+          const loot = DDDungeon.grantClearLoot(session);
+          if (loot) DDUI.toast('Stash: ' + loot.name);
+        }
         DDSession.write(session);
         if (result && result.effect) {
           DDEffects.play(result.effect, DDEffects.kindLabel(result.effect));
@@ -531,6 +561,7 @@
         if (session.pendingAdvance) awaitingContinue = true;
         DDUI.show(DDUI.$('#solo-banner'), !!session.solo);
         renderRoster();
+        renderStash();
         refreshUnlock();
 
         if (session.phase === 'ended' || DDDungeon.isComplete(session)) {
@@ -650,13 +681,13 @@
             note.textContent = 'Watch the roster and wait for the host to pick an action.';
             list.appendChild(note);
           }
-          // Host-only smoke skip to Barrel King (room index 4)
+          // Host-only smoke skip to Concierge
           if (isHost) {
             const skip = document.createElement('button');
             skip.type = 'button';
             skip.className = 'btn ghost skip-boss';
-            skip.textContent = 'Skip to Barrel King (debug)';
-            skip.title = 'Jump to room index 4 — card combat boss';
+            skip.textContent = 'Skip to Concierge (debug)';
+            skip.title = 'Jump to Concierge boss';
             skip.addEventListener('click', function () {
               session = DDSession.read(active.code) || session;
               session.roomIndex = bossRoomIndex();
@@ -681,7 +712,7 @@
         DDDungeon.startRun(session);
         if (wantBoss) {
           session.roomIndex = bossRoomIndex();
-          DDUI.toast('Smoke: jumped to Barrel King (room index ' + session.roomIndex + ')');
+          DDUI.toast('Smoke: jumped to Concierge (room index ' + session.roomIndex + ')');
         }
         DDSession.write(session);
         awaitingContinue = false;

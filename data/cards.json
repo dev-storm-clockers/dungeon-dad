@@ -5,92 +5,153 @@
   "handSize": 5,
   "heroes": {
     "defaultHp": 8,
-    "hpPerGrit": 1
+    "hpPerGrit": 1,
+    "roster": [
+      {
+        "id": "torch",
+        "name": "Torch",
+        "feel": "Steady lead",
+        "lean": "Block / reveal",
+        "emoji": "🔦",
+        "color": "#e9c46a",
+        "stats": { "grit": 3, "wit": 2, "care": 3, "spark": 2 },
+        "passive": "block",
+        "blurb": "Takes the first hit so the rest of you don't."
+      },
+      {
+        "id": "keen",
+        "name": "Keen",
+        "feel": "Sharp eyes",
+        "lean": "Draw / trap break",
+        "emoji": "👁️",
+        "color": "#00bbf9",
+        "stats": { "grit": 2, "wit": 4, "care": 2, "spark": 2 },
+        "passive": "draw",
+        "blurb": "Sees the wire before it bites."
+      },
+      {
+        "id": "heft",
+        "name": "Heft",
+        "feel": "Hits hard",
+        "lean": "Damage",
+        "emoji": "🪨",
+        "color": "#e76f51",
+        "stats": { "grit": 4, "wit": 2, "care": 2, "spark": 1 },
+        "passive": "damage",
+        "blurb": "Opens doors the hard way."
+      },
+      {
+        "id": "wry",
+        "name": "Wry",
+        "feel": "Cuts tension",
+        "lean": "Disrupt / heal-light",
+        "emoji": "🃏",
+        "color": "#9b5de5",
+        "stats": { "grit": 2, "wit": 2, "care": 3, "spark": 3 },
+        "passive": "disrupt",
+        "blurb": "A dry line and a patch kit."
+      }
+    ]
   },
   "allies": [
     {
-      "id": "cinnamon-sprite",
-      "name": "Cinnamon Sprite",
+      "id": "fuse-bug",
+      "name": "Fuse Bug",
       "cost": 1,
       "atk": 1,
       "hp": 2,
-      "emoji": "✨",
-      "blurb": "A sweet spark that nips at grumpy barrels."
+      "emoji": "⚡",
+      "blurb": "Sparks once, then crawls into the panel."
     },
     {
-      "id": "lantern-pup",
-      "name": "Lantern Pup",
+      "id": "tunnel-rat",
+      "name": "Tunnel Rat",
       "cost": 2,
       "atk": 2,
       "hp": 2,
-      "emoji": "🏮",
-      "blurb": "Wags a warm glow into dark corners."
+      "emoji": "🐀",
+      "blurb": "Knows which pipes still hold."
     },
     {
-      "id": "broom-buddy",
-      "name": "Broom Buddy",
+      "id": "pipe-wrench",
+      "name": "Pipe Wrench",
       "cost": 2,
       "atk": 1,
       "hp": 3,
-      "emoji": "🧹",
-      "blurb": "Sweeps foes aside with cheerful thwacks."
+      "emoji": "🔧",
+      "blurb": "Blunt tool. Honest damage."
     },
     {
-      "id": "toffee-guard",
-      "name": "Toffee Guard",
+      "id": "meter-shield",
+      "name": "Meter Shield",
       "cost": 3,
       "atk": 2,
       "hp": 4,
       "emoji": "🛡️",
-      "blurb": "Sticky shield, stickier loyalty."
+      "blurb": "Glass and steel — blocks the next swing."
     },
     {
-      "id": "kindness-cub",
-      "name": "Kindness Cub",
+      "id": "bulkhead",
+      "name": "Bulkhead",
       "cost": 3,
       "atk": 3,
       "hp": 3,
-      "emoji": "🧸",
-      "blurb": "Hugs hard enough to tip a king."
+      "emoji": "🧱",
+      "blurb": "Moves like a wall that got angry."
     },
     {
-      "id": "joke-jester",
-      "name": "Joke Jester",
+      "id": "deadpan",
+      "name": "Deadpan",
       "cost": 1,
       "atk": 2,
       "hp": 1,
-      "emoji": "🃏",
-      "blurb": "Dad jokes that deal surprise poke damage."
+      "emoji": "😐",
+      "blurb": "One line. It lands."
     },
     {
-      "id": "map-moth",
-      "name": "Map Moth",
+      "id": "floor-plan",
+      "name": "Floor Plan",
       "cost": 2,
       "atk": 1,
       "hp": 4,
-      "emoji": "🦋",
-      "blurb": "Flutter tank that marks the safe path."
+      "emoji": "🗺️",
+      "blurb": "Marks the safe path in pencil."
     },
     {
-      "id": "cellar-choir",
-      "name": "Cellar Choir",
+      "id": "boiler-chord",
+      "name": "Boiler Chord",
       "cost": 4,
       "atk": 3,
       "hp": 4,
-      "emoji": "🎶",
-      "blurb": "Harmonizes until the barrel yields."
+      "emoji": "🔊",
+      "blurb": "Pressure sings until something yields."
     }
   ],
   "enemies": {
-    "barrel-king": {
-      "id": "barrel-king",
-      "name": "Grumpy Barrel King",
-      "hp": 12,
+    "rattle-hatch": {
+      "id": "rattle-hatch",
+      "name": "Rattle Hatch",
+      "hp": 8,
       "atk": 2,
-      "emoji": "🛢️",
-      "blurb": "Googly-eyed barrel boss. Soft corks only — all ages.",
-      "winText": "Your allies tip the Barrel King into a hug-roll. It declares you champions and rolls aside.",
-      "loseText": "The Barrel King bonks you with a soft cork — then yawns and rolls aside anyway. Fail-forward!"
+      "emoji": "🔩",
+      "blurb": "Loose hatch plate with teeth. Small pack.",
+      "intent": "Strikes a random ally — or a hero if the board is empty.",
+      "winText": "The plate stops rattling. Side tunnel clear.",
+      "loseText": "It scrapes you raw and skitters off. You push on toward the booth."
+    },
+    "concierge": {
+      "id": "concierge",
+      "name": "The Concierge",
+      "hp": 14,
+      "atk": 2,
+      "emoji": "🚪",
+      "blurb": "Door with a ledger. Toll in Energy — unpaid becomes HP.",
+      "pattern": "energy-toll",
+      "tollEnergy": 1,
+      "tollHp": 3,
+      "intent": "TOLL DUE — taxes 1 Energy after your turn. If you spent it all, takes 3 HP instead. Then strikes.",
+      "winText": "The ledger stamps PAID. The door swings. Spare Key drops into party stash.",
+      "loseText": "ACCOUNT CLOSED. The Concierge wipes the party. Recap what you learned."
     }
   }
 }
